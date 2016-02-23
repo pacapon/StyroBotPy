@@ -3,8 +3,9 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 
 ## DEPENDENCIES:
 1. pip install git+https://github.com/Rapptz/discord.py@async
-2. pip install cleverbot.py
-3. In order to properly run audio stuff, you need have ffmpeg in your PATH variable.
+2. pip install cleverbot
+3. pip install pafy
+4. In order to properly run audio stuff, you need have ffmpeg in your PATH variable.
 
 ## CREATING AN EXECUTABLE:
 1. Install Python 3.5
