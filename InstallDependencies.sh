@@ -1,6 +1,12 @@
-@echo off
+#!/bin/bash
+command -v pip >/dev/null 2>&1 || {
+echo >&2 "This script requires pip but it's not installed. Please install pip before running this script. Aborting.";
+exit 1;
+}
+echo "Would you like to update pip first? (y/n): "
 
 echo "Installing Dependencies for StyroBotPy"
+
 echo "Installing Discord.py"
 pip install git+https://github.com/Rapptz/discord.py@async
 echo "Complete!"
