@@ -17,3 +17,9 @@ copy:
 
 $(TARGET): $(FILES) 
 	$(CC) $(C_FLAGS) $(FILES) -n $(TARGET) 
+
+install:
+	sudo ./InstallDependencies.sh
+
+clean:
+	rm -rf ./build/ ./dist/ ./StyroBotPy.spec
