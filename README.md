@@ -3,14 +3,14 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 
 ## DEPENDENCIES:
 ### Option 1: Automatically 
-#### WINDOWS
+**WINDOWS**
 1. Run "InstallDependencies.bat"
 
-#### LINUX
+**LINUX**
 1. Run "InstallDependencies.sh" OR "make install"
 
 ### Option 2: Manually 
-#### WINDOWS & LINUX
+**WINDOWS & LINUX**
 1. pip install git+https://github.com/Rapptz/discord.py@async
 2. pip install cleverbot
 3. pip install pafy
@@ -18,14 +18,14 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 
 ## CREATING AN EXECUTABLE:
 ### Option 1: Automatically
-#### WINDOWS
+**WINDOWS**
 1. Run "CreateExecutable.bat"
 
-#### LINUX
+**LINUX**
 1. Run "make"
 
 ### Option 2: Manually
-#### WINDOWS & LINUX
+**WINDOWS & LINUX**
 1. Install Python 3.5
 2. Open a cmd window in your project folder
 3. Run "pip install pyinstaller"
