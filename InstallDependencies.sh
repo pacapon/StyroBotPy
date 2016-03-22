@@ -3,7 +3,14 @@ command -v pip >/dev/null 2>&1 || {
 echo >&2 "This script requires pip but it's not installed. Please install pip before running this script. Aborting.";
 exit 1;
 }
+input=''
 echo "Would you like to update pip first? (y/n): "
+read -n 1 input
+echo
+
+if [ "$input" = "y" ] || [ "$input" = "Y" ]; then
+    pip install --upgrade pip
+fi
 
 echo "Installing Dependencies for StyroBotPy"
 
