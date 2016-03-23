@@ -1,6 +1,25 @@
 # StyroBotPy
 Python version of my custom DiscordBot, based on Rapptz discord.py
 
+## Bot Commands
+Command | Description
+--- | ---
+!help | Prints out the commands available
+!hello | Say Hello
+!joinvoice <name> | Join voice channel <name>
+!leave | Leave the current voice channel
+!pause | Pause the currently playing song
+!resume | Resume the currently paused song
+!next <songname> | Queue the song to be played next
+!play | Play the queued songs
+!addsong <url> <name> | Download song at <url> for playback using <name>
+!addnq <url> <name> | Download song at <url> for playback using <name> and queue
+!skip | Skip the currently playing song
+!chat <message> | Send a message to cleverbot
+!f14 | Create an F14!
+!changebotname <name> | Change the name of the bot to <name>
+!shutdown | Shutdown the bot
+
 ## DEPENDENCIES:
 ### Option 1: Automatically 
 **WINDOWS**

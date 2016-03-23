@@ -70,12 +70,29 @@ class Bot(discord.Client):
     def is_playing(self):
         return self.player is not None and self.player.is_playing()
 
+    def getHelp(self):
+        helpStr = 'Bot Commands:\n'
+        helpStr += '!hello                                       - Say Hello\n'
+        helpStr += '!joinvoice <name>               - Join voice channel with given name\n'
+        helpStr += '!leave                                      - Leave the current voice channel\n'
+        helpStr += '!pause                                     - Pause the currently playing song\n'
+        helpStr += '!resume                                  - Resume the currently paused song\n'
+        helpStr += '!next <songname>              - Queue the song to be played next\n'
+        helpStr += '!play                                        - Play the qued songs\n'
+        helpStr += '!addsong <url> <name>    - Download song for playback\n'
+        helpStr += '!addnq <url> <name>        - Download song for playback and queue to be played next\n'
+        helpStr += '!skip                                        - Skip the currently playing song\n'
+        helpStr += '!chat <message>                 - Send a message to cleverbot\n'
+        helpStr += '!f14                                          - Create an F14!\n'
+        helpStr += '!changebotname <name>   - Change the name of the bot\n'
+        helpStr += '!shutdown                              - Shutdown the bot\n'
+        return helpStr
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
         print('-----------')
-
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -88,8 +105,10 @@ class Bot(discord.Client):
             channel = discord.utils.find(check, message.server.channels)
             await self.move_member(message.author, channel)
             await self.send_message(message.channel, fmt.format(message))
-        
-        if message.content.startswith('!hello'):
+
+        if message.content.startswith('!help'):
+            await self.send_message(message.channel, self.getHelp())
+        elif message.content.startswith('!hello'):
             await self.send_message(message.channel, 'Hello World!')
         elif message.content.startswith('!joinvoice'):
             channel_name = message.content[10:].strip()
@@ -159,6 +178,12 @@ class Bot(discord.Client):
         elif message.content.startswith('!changebotname'):
             newName = message.content[14:].strip()
             await self.edit_profile('nahimgucci', username=newName)
+        elif message.content.startswith('!shutdown'):
+            for role in message.author.roles:
+                if role.permissions.manage_roles: # Change manage_roles if you want a different permission level to be able to do this
+                    await self.logout()
+                    break
+
   
 styroBot = Bot()
 f = open('credentials.txt', 'r')
