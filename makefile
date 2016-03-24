@@ -10,20 +10,22 @@ TARGET = StyroBotPy
 FILES = StyroBotPy.py
 #################################
 
-all: $(TARGET) copy
+all: copy
+
+build: $(TARGET)
 
 run: copy
 	python ./dist/StyroBotPy.py
 
 copy:
 	cp -r "./deps/" "./dist/" 
-	cp "./$(FILES)" "./dist/$(FILES)"
+	cp "./src/$(FILES)" "./dist/$(FILES)"
 
 	@# This is just how i keep my credentials outside of the repo
 	cp "./credentials.txt" "./dist/credentials.txt" 
 
-$(TARGET): $(FILES) 
-	$(CC) $(C_FLAGS) $(FILES) -n $(TARGET) 
+$(TARGET): ./src/$(FILES) 
+	$(CC) $(C_FLAGS) ./src/$(FILES) -n $(TARGET) 
 
 install:
 	sudo ./InstallDependencies.sh
