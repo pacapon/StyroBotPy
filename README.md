@@ -51,6 +51,7 @@ Command | Description
 !play | Play the queued songs
 !addsong [url] [name] | Download song at [url] for playback using [name]
 !addnq [url] [name] | Download song at [url] for playback using [name] and queue
+!songlist | Display the current song playlist
 !skip | Skip the currently playing song
 !chat [message] | Send a message to cleverbot
 !f14 | Create an F14!

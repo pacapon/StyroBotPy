@@ -81,6 +81,7 @@ class Bot(discord.Client):
         helpStr += '!play                                        - Play the qued songs\n'
         helpStr += '!addsong <url> <name>    - Download song for playback\n'
         helpStr += '!addnq <url> <name>        - Download song for playback and queue to be played next\n'
+        helpStr += '!songlist                                  - Display the current song playlist\n'
         helpStr += '!skip                                        - Skip the currently playing song\n'
         helpStr += '!chat <message>                 - Send a message to cleverbot\n'
         helpStr += '!f14                                          - Create an F14!\n'
