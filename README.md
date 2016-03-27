@@ -43,18 +43,18 @@ Command | Description
 --- | ---
 !help | Prints out the commands available
 !hello | Say Hello
-<pre>!joinvoice <name></pre> | <pre>Join voice channel <name></pre>
+!joinvoice [name] | Join voice channel [name]
 !leave | Leave the current voice channel
 !pause | Pause the currently playing song
 !resume | Resume the currently paused song
-!next <songname> | Queue the song to be played next
+!next [songname] | Queue the song to be played next
 !play | Play the queued songs
-<pre>!addsong <url> <name></pre> | <pre>Download song at <url> for playback using <name></pre>
-<pre>!addnq <url> <name></pre> | <pre>Download song at <url> for playback using <name> and queue</pre>
+!addsong [url] [name] | Download song at [url] for playback using [name]
+!addnq [url] [name] | Download song at [url] for playback using [name] and queue
 !skip | Skip the currently playing song
-<pre>!chat <message></pre>| <pre>Send a message to cleverbot</pre>
+!chat [message] | Send a message to cleverbot
 !f14 | Create an F14!
-<pre>!changebotname <name></pre> | <pre>Change the name of the bot to <name></pre>
+!changebotname [name] | Change the name of the bot to [name]
 !shutdown | Shutdown the bot
 
 
