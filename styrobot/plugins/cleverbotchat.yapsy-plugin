@@ -1,0 +1,9 @@
+[Core]
+Name = CleverBotChat Plugin
+Module = cleverbotchat
+
+[Documentation]
+Description = A chat plugin which adds cleverbot support
+Author = Vincent
+Version = 1.0
+Website = None

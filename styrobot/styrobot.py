@@ -2,8 +2,9 @@ import discord
 import asyncio
 import pafy
 import os
-import cleverbot
 import random
+from yapsy.PluginManager import PluginManager
+from plugin import Plugin
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
@@ -59,7 +60,19 @@ class Bot(discord.Client):
         self.starter = None
         self.player = None
         self.current = None
-        self.cb = cleverbot.Cleverbot()
+        #self.cb = cleverbot.Cleverbot()
+
+        # Create Plugin Manager
+        self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
+        self.pluginManager.setPluginPlaces(["plugins"])
+
+        # Load Plugins
+        self.pluginManager.locatePlugins()
+        self.pluginManager.loadPlugins()
+
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            print('xxxx')
+            plugin.plugin_object.initialize()
 
     def toggle_next_song(self):
         self.loop.call_soon_threadsafe(self.play_next_song.set)
@@ -71,22 +84,30 @@ class Bot(discord.Client):
         return self.player is not None and self.player.is_playing()
 
     def getHelp(self):
-        helpStr = 'Bot Commands:\n'
-        helpStr += '!hello                                       - Say Hello\n'
-        helpStr += '!joinvoice <name>               - Join voice channel with given name\n'
-        helpStr += '!leave                                      - Leave the current voice channel\n'
-        helpStr += '!pause                                     - Pause the currently playing song\n'
-        helpStr += '!resume                                  - Resume the currently paused song\n'
-        helpStr += '!next <songname>              - Queue the song to be played next\n'
-        helpStr += '!play                                        - Play the qued songs\n'
-        helpStr += '!addsong <url> <name>    - Download song for playback\n'
-        helpStr += '!addnq <url> <name>        - Download song for playback and queue to be played next\n'
-        helpStr += '!songlist                                  - Display the current song playlist\n'
-        helpStr += '!skip                                        - Skip the currently playing song\n'
-        helpStr += '!chat <message>                 - Send a message to cleverbot\n'
-        helpStr += '!f14                                          - Create an F14!\n'
-        helpStr += '!changebotname <name>   - Change the name of the bot\n'
-        helpStr += '!shutdown                              - Shutdown the bot\n'
+        helpStr = 'Basic Commands:\n'
+        helpStr += '!hello   - Say Hello\n'
+        helpStr += '!f14   - Create an F14!\n'
+        helpStr += '!changebotname <name>   - Change the name of the bot to <name>\n'
+        helpStr += '!shutdown   - Shutdown the bot (requires server admin permissions)\n'
+
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            commands = plugin.plugin_object.getCommands()
+
+            helpStr += '\n' + plugin.name + ' Commands:\n'
+
+            for com in commands:
+                helpStr += com + '\n'
+
+        #helpStr += '!joinvoice <name>               - Join voice channel with given name\n'
+        #helpStr += '!leave                                      - Leave the current voice channel\n'
+        #helpStr += '!pause                                     - Pause the currently playing song\n'
+        #helpStr += '!resume                                  - Resume the currently paused song\n'
+        #helpStr += '!next <songname>              - Queue the song to be played next\n'
+        #helpStr += '!play                                        - Play the qued songs\n'
+        #helpStr += '!addsong <url> <name>    - Download song for playback\n'
+        #helpStr += '!addnq <url> <name>        - Download song for playback and queue to be played next\n'
+        #helpStr += '!songlist                                  - Display the current song playlist\n'
+        #helpStr += '!skip                                        - Skip the currently playing song\n'
         return helpStr
 
     async def on_ready(self):
@@ -99,6 +120,49 @@ class Bot(discord.Client):
         if message.author == self.user:
             return
 
+        # We do something special with basic built-in commands 
+        # because we don't want plugins using these
+        if (message.content.startswith('!help')):
+            await self.send_message(message.channel, self.getHelp())
+            return
+        elif message.content.startswith('!shutdown'):
+            for role in message.author.roles:
+                if role.permissions.manage_roles: # Change manage_roles if you want a different permission level to be able to do this
+                    await self.logout()
+                    break
+            return 
+        elif message.content.startswith('!hello'):
+            await self.send_message(message.channel, 'Hello World!')
+            return
+        elif message.content.startswith('!f14'):
+            await self.send_file(message.channel, 'images/f14.jpg')
+            return
+        elif message.content.startswith('!changebotname'):
+            newName = message.content[14:].strip()
+            await self.edit_profile(password, username=newName)
+            return
+
+        command = ''
+        parameters = ''
+            
+        # If we have a command, extract the command and parameters (if any)
+        if message.content.startswith('!'):
+            content =  message.content.split(' ', 1) 
+            command = content[0]
+
+            if len(content) > 1:
+                parameters = content[1]
+
+        # Go through each of the plugins and see if they can execute the command
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            # Let the plugin read the message
+            if plugin.plugin_object.isReadingMessages():
+                plugin.plugin_object.readMessage(message)
+
+            # Check if a plugin can handle the command and execute it if they can
+            if command != '' and plugin.plugin_object.checkForCommand(command):
+                plugin.plugin_object.executeCommand(command, parameters)
+
         if 'poop' in message.content:
             fmt = '[Moving user {0.author} to AFK for using a banned word.]'
             check = lambda c: c.name == 'AFK' and c.type == discord.ChannelType.voice
@@ -107,10 +171,6 @@ class Bot(discord.Client):
             await self.move_member(message.author, channel)
             await self.send_message(message.channel, fmt.format(message))
 
-        if message.content.startswith('!help'):
-            await self.send_message(message.channel, self.getHelp())
-        elif message.content.startswith('!hello'):
-            await self.send_message(message.channel, 'Hello World!')
         elif message.content.startswith('!joinvoice'):
             channel_name = message.content[10:].strip()
             check = lambda c: c.name == channel_name and c.type == discord.ChannelType.voice
@@ -172,19 +232,9 @@ class Bot(discord.Client):
             await skip(self, message)
         elif message.content.startswith('!chat'):
             question = message.content[5:].strip()
-            response = self.cb.ask(question)
-            await self.send_message(message.channel, response)
-        elif message.content.startswith('!f14'):
-            await self.send_file(message.channel, 'images/f14.jpg')
-        elif message.content.startswith('!changebotname'):
-            newName = message.content[14:].strip()
-            await self.edit_profile('nahimgucci', username=newName)
-        elif message.content.startswith('!shutdown'):
-            for role in message.author.roles:
-                if role.permissions.manage_roles: # Change manage_roles if you want a different permission level to be able to do this
-                    await self.logout()
-                    break
-
+            #response = self.cb.ask(question)
+            #await self.send_message(message.channel, response)
+                
   
 styroBot = Bot()
 f = open('credentials.txt', 'r')
