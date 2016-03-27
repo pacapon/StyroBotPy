@@ -1,6 +1,13 @@
 # StyroBotPy
 Python version of my custom DiscordBot, based on Rapptz discord.py
 
+# Requirements
+- Python 3.5
+- discord.py
+- cleverbot.py
+- pafy
+- yapsy
+
 ## Installing Dependencies
 ### Option 1: Automatically 
 **WINDOWS**
@@ -17,7 +24,8 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 1. pip install git+https://github.com/Rapptz/discord.py@async
 2. pip install cleverbot
 3. pip install pafy
-4. In order to properly run audio stuff, you need have ffmpeg in your PATH variable. 
+4. pip install yapsy
+5. In order to properly run audio stuff, you need have ffmpeg in your PATH variable. 
 
 ## Creating an Executable
 ### Option 1: Automatically

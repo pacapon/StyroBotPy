@@ -23,4 +23,7 @@ echo "Complete!"
 echo "Installing Pafy"
 pip install pafy
 echo "Complete!"
+echo "Installing Yapsy"
+pip install yapsy
+echo "Complete!"
 echo "All Dependencies have been Installed!"
