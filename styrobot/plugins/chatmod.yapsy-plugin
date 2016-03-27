@@ -1,0 +1,9 @@
+[Core]
+Name = ChatMod Plugin
+Module = chatmod
+
+[Documentation]
+Description = A chat moderator plugin
+Author = Vincent
+Version = 1.0
+Website = None

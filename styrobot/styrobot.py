@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import discord
 import asyncio
 import pafy
@@ -71,8 +72,8 @@ class Bot(discord.Client):
         self.pluginManager.loadPlugins()
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            print('xxxx')
             plugin.plugin_object.initialize()
+            print(plugin.name + ' Initialized!')
 
     def toggle_next_song(self):
         self.loop.call_soon_threadsafe(self.play_next_song.set)
