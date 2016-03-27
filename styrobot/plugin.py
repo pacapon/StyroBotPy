@@ -1,6 +1,6 @@
 import abc
 
-class StryoModule:
+class Plugin:
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
