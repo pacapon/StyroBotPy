@@ -4,7 +4,8 @@ class Plugin:
     __metaclass__ = abc.ABCMeta
 
     # Initializes the plugin
-    def initialize(self): pass
+    # @param bot  A reference to the bot's instance
+    def initialize(self, bot): pass
 
     # Gets the list of commands and their descriptions that this plugin can do
     # Format: !<commandname> <parameters>  - <description>
@@ -22,7 +23,7 @@ class Plugin:
     # @param command     The command to execute
     # @param parameters  Any extra parameters that followed the command
     @abc.abstractmethod
-    def executeCommand(self, command, parameters): pass
+    async def executeCommand(self, channel, command, parameters): pass
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something
@@ -33,7 +34,7 @@ class Plugin:
     # Allows the plugin to read the full message and do whatever they want with it
     # It is not recommend to handle commands in this function.
     # @param message  The message as given by discord. See discord documentation on the message class 
-    def readMessage(self, message): pass
+    async def readMessage(self, message): pass
 
     # Shutdowns the plugin
     def shutdown(self): pass

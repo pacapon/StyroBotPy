@@ -2,9 +2,9 @@ from plugin import Plugin
 #import cleverbot
 
 class CleverBotChat(Plugin):
-    def initialize(self):
+    def initialize(self, bot):
         #self.cb = cleverbot.Cleverbot()
-        print('CleverBotChat Initialized!')
+        pass
 
     def getCommands(self):
         commands = []
@@ -14,16 +14,17 @@ class CleverBotChat(Plugin):
         return commands
 
     def checkForCommand(self, command):
-        print ('Checking for command: ' + command)
+        #print ('Checking for command: ' + command)
         return True
 
-    def executeCommand(self, command, parameters):
-        print('Executing command: ' + command + ' with parameters: ' + parameters)
+    async def executeCommand(self, channel, command, parameters):
+        #print('Executing command: ' + command + ' with parameters: ' + parameters + ' on channel: ' + channel.name)
+        pass
 
     def isReadingMessages(self):
         return True
 
-    def readMessage(self, message):
+    async def readMessage(self, message):
         print(message.author.name + ' sent message: ' + message.content)
 
     def shutdown(self):

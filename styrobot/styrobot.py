@@ -72,7 +72,7 @@ class Bot(discord.Client):
         self.pluginManager.loadPlugins()
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            plugin.plugin_object.initialize()
+            plugin.plugin_object.initialize(self)
             print(plugin.name + ' Initialized!')
 
     def toggle_next_song(self):
@@ -158,19 +158,19 @@ class Bot(discord.Client):
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Let the plugin read the message
             if plugin.plugin_object.isReadingMessages():
-                plugin.plugin_object.readMessage(message)
+                await plugin.plugin_object.readMessage(message)
 
             # Check if a plugin can handle the command and execute it if they can
             if command != '' and plugin.plugin_object.checkForCommand(command):
-                plugin.plugin_object.executeCommand(command, parameters)
+                await plugin.plugin_object.executeCommand(message.channel, command, parameters)
 
         if 'poop' in message.content:
             fmt = '[Moving user {0.author} to AFK for using a banned word.]'
             check = lambda c: c.name == 'AFK' and c.type == discord.ChannelType.voice
 
             channel = discord.utils.find(check, message.server.channels)
-            await self.move_member(message.author, channel)
-            await self.send_message(message.channel, fmt.format(message))
+            #await self.move_member(message.author, channel)
+            #await self.send_message(message.channel, fmt.format(message))
 
         elif message.content.startswith('!joinvoice'):
             channel_name = message.content[10:].strip()
