@@ -5,7 +5,7 @@ class Plugin:
 
     # Initializes the plugin
     # @param bot  A reference to the bot's instance
-    def initialize(self, bot): pass
+    async def initialize(self, bot): pass
 
     # Gets the list of commands and their descriptions that this plugin can do
     # Format: !<commandname> <parameters>  - <description>

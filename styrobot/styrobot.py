@@ -66,15 +66,7 @@ class Bot(discord.Client):
         # Create Plugin Manager
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
         self.pluginManager.setPluginPlaces(["plugins"])
-
-        # Load Plugins
-        self.pluginManager.locatePlugins()
-        self.pluginManager.loadPlugins()
-
-        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            plugin.plugin_object.initialize(self)
-            print(plugin.name + ' Initialized!')
-
+        
     def toggle_next_song(self):
         self.loop.call_soon_threadsafe(self.play_next_song.set)
 
@@ -90,6 +82,7 @@ class Bot(discord.Client):
         helpStr += '!f14   - Create an F14!\n'
         helpStr += '!changebotname <name>   - Change the name of the bot to <name>\n'
         helpStr += '!shutdown   - Shutdown the bot (requires server admin permissions)\n'
+        helpStr += '!reload   - Reloads the plugins dynamically at runtime'
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             commands = plugin.plugin_object.getCommands()
@@ -111,11 +104,22 @@ class Bot(discord.Client):
         #helpStr += '!skip                                        - Skip the currently playing song\n'
         return helpStr
 
+    async def reloadPlugins(self):
+        # Load Plugins
+        self.pluginManager.locatePlugins()
+        self.pluginManager.loadPlugins()
+
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            await plugin.plugin_object.initialize(self)
+            print(plugin.name + ' Initialized!')
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
         print('-----------')
+
+        await self.reloadPlugins()
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -141,6 +145,10 @@ class Bot(discord.Client):
         elif message.content.startswith('!changebotname'):
             newName = message.content[14:].strip()
             await self.edit_profile(password, username=newName)
+            return
+        elif message.content.startswith('!reload'):
+            print('Reloading plugins!')
+            await self.reloadPlugins()
             return
 
         command = ''

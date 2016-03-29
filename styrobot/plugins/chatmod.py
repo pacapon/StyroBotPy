@@ -1,8 +1,9 @@
 from plugin import Plugin
+import discord
 
 class ChatMod(Plugin):
 
-    def initialize(self, bot):
+    async def initialize(self, bot):
         self.bot = bot
         self.bannedWords = []
         self.commands = []
@@ -11,26 +12,33 @@ class ChatMod(Plugin):
         self.commands.append('!banword')
         self.commands.append('!unbanword')
 
+        print('This Bot is part of ' + str(len(self.bot.servers)) + ' servers!')
+
         for server in self.bot.servers:
-            channel = discord.utils.get(server.channels, name='ChatModSettings', type=ChannelType.text)
+            channel = discord.utils.get(server.channels, name='chatmodsettings', type=discord.ChannelType.text)
 
             if channel == None:
-                channel = self.bot.create_channel(server, 'ChatModSettings')
+                print('No settings found, creating channel')
+                channel = await self.bot.create_channel(server, 'chatmodsettings')
+            else:
+                print('Settings found, loading channel info')
 
-            # do something with channel
+                # do something with channel
+                async for message in self.bot.logs_from(channel, limit=1000000):
+                    print('Message: '+ message.content)
 
-        try:
-            f = open('chatmodsettings.txt', 'r+')
-            contents = f.read().splitlines()
-            
-            for line in contents:
-                if line.startswith('='):
-                    self.bannedWords.append(line[1:])
+        #try:
+        #    f = open('chatmodsettings.txt', 'r+')
+        #    contents = f.read().splitlines()
+        #    
+        #    for line in contents:
+        #        if line.startswith('='):
+        #            self.bannedWords.append(line[1:])
 
-        except IOError:
-            f = open('chatmodsettings.txt', 'w')
-            f.write('=poop')
-            f.close()
+        #except IOError:
+        #    f = open('chatmodsettings.txt', 'w')
+        #    f.write('=poop')
+        #    f.close()
 
     def getCommands(self):
         commands = []

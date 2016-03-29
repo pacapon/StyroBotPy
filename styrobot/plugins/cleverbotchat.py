@@ -2,7 +2,7 @@ from plugin import Plugin
 #import cleverbot
 
 class CleverBotChat(Plugin):
-    def initialize(self, bot):
+    async def initialize(self, bot):
         #self.cb = cleverbot.Cleverbot()
         pass
 
