@@ -27,6 +27,11 @@ copy:
 	@# This is just how i keep my credentials outside of the repo
 	cp "./credentials.txt" "./dist/credentials.txt" 
 
+test:
+	cp -r "./styrobot/" "./dist/"
+	cp -r "./deps/." "./dist/" 
+	cp "./credentials.txt" "./dist/credentials.txt" 
+
 copy-plugins:
 	cp -r "./styrobot/plugins/" "./dist/plugins/"
 
