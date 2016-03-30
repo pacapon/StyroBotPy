@@ -20,10 +20,12 @@ class Plugin:
     def checkForCommand(self, command): pass
 
     # Executes the chat command 
+    # @param channel     The discord channel this command was executed in
+    # @param author      The user which executed this command
     # @param command     The command to execute
     # @param parameters  Any extra parameters that followed the command
     @abc.abstractmethod
-    async def executeCommand(self, channel, command, parameters): pass
+    async def executeCommand(self, channel, author, command, parameters): pass
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something

@@ -170,17 +170,9 @@ class Bot(discord.Client):
 
             # Check if a plugin can handle the command and execute it if they can
             if command != '' and plugin.plugin_object.checkForCommand(command):
-                await plugin.plugin_object.executeCommand(message.channel, command, parameters)
+                await plugin.plugin_object.executeCommand(message.channel, message.author, command, parameters)
 
-        if 'poop' in message.content:
-            fmt = '[Moving user {0.author} to AFK for using a banned word.]'
-            check = lambda c: c.name == 'AFK' and c.type == discord.ChannelType.voice
-
-            channel = discord.utils.find(check, message.server.channels)
-            #await self.move_member(message.author, channel)
-            #await self.send_message(message.channel, fmt.format(message))
-
-        elif message.content.startswith('!joinvoice'):
+        if message.content.startswith('!joinvoice'):
             channel_name = message.content[10:].strip()
             check = lambda c: c.name == channel_name and c.type == discord.ChannelType.voice
 
