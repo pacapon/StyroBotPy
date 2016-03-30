@@ -77,17 +77,17 @@ class Bot(discord.Client):
         return self.player is not None and self.player.is_playing()
 
     def getHelp(self):
-        helpStr = 'Basic Commands:\n'
-        helpStr += '!hello   - Say Hello\n'
-        helpStr += '!f14   - Create an F14!\n'
-        helpStr += '!changebotname <name>   - Change the name of the bot to <name>\n'
-        helpStr += '!shutdown   - Shutdown the bot (requires server admin permissions)\n'
-        helpStr += '!reload   - Reloads the plugins dynamically at runtime'
+        helpStr = '__**Basic Commands:**__\n'
+        helpStr += '**!hello**   - Say Hello\n'
+        helpStr += '**!f14**   - Create an F14!\n'
+        helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
+        helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
+        helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             commands = plugin.plugin_object.getCommands()
 
-            helpStr += '\n' + plugin.name + ' Commands:\n'
+            helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
 
             for com in commands:
                 helpStr += com + '\n'

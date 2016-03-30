@@ -9,7 +9,7 @@ class CleverBotChat(Plugin):
     def getCommands(self):
         commands = []
         
-        commands.append('!chat <message>  - Sends a message to CleverBot')
+        commands.append('**!chat <message>**  - Sends a message to CleverBot')
 
         return commands
 

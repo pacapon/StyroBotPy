@@ -7,45 +7,52 @@ class ChatMod(Plugin):
         self.bot = bot
         self.bannedWords = []
         self.commands = []
+        self.userWarnings = {}
+        self.maxWarnings = 2 # How many warnings should a user get before action is taken
+
+        # What action to take on a user after they've maxed out their warnings
+        # Options are: mute, kick and ban
+        self.banAction = 'kick' 
 
         self.commands.append('!showbanned')
+        self.commands.append('!cmsettings')
+        self.commands.append('!cmmaxwarn')
+        self.commands.append('!cmbanact')
         self.commands.append('!banword')
         self.commands.append('!unbanword')
 
         print('This Bot is part of ' + str(len(self.bot.servers)) + ' servers!')
 
         for server in self.bot.servers:
-            channel = discord.utils.get(server.channels, name='chatmodsettings', type=discord.ChannelType.text)
+            self.channel = discord.utils.get(server.channels, name='chatmodsettings', type=discord.ChannelType.text)
 
-            if channel == None:
+            if self.channel == None:
                 print('No settings found, creating channel')
-                channel = await self.bot.create_channel(server, 'chatmodsettings')
+                self.channel = await self.bot.create_channel(server, 'chatmodsettings')
+
+                await self.bot.send_message(self.channel, '_maxwarn=' + self.maxWarnings)
+                await self.bot.send_message(self.channel, '_banact=', + self.banAction)
+
             else:
                 print('Settings found, loading channel info')
 
-                # do something with channel
-                async for message in self.bot.logs_from(channel, limit=1000000):
-                    print('Message: '+ message.content)
-
-        #try:
-        #    f = open('chatmodsettings.txt', 'r+')
-        #    contents = f.read().splitlines()
-        #    
-        #    for line in contents:
-        #        if line.startswith('='):
-        #            self.bannedWords.append(line[1:])
-
-        #except IOError:
-        #    f = open('chatmodsettings.txt', 'w')
-        #    f.write('=poop')
-        #    f.close()
+                async for message in self.bot.logs_from(self.channel, limit=1000000):
+                    if message.content.startswith('='):
+                        self.bannedWords.append(message.content[1:])
+                    elif message.content.startswith('_maxwarn='):
+                        self.maxWarnings = message.content[9:]
+                    elif message.content.startswith('_banact='):
+                        self.banAction = message.content[8:]
 
     def getCommands(self):
         commands = []
 
-        commands.append('!showbanned   - Shows the list of banned words')
-        commands.append('!banword <word>   - Adds <word> to the list of banned words')
-        commands.append('!unbanword <word>   - Removes <word> from the list of banned words')
+        commands.append('**!showbanned**   - Shows the list of banned words')
+        commands.append('**!cmsettings**   - Show the current settings for the chat mod plugin')
+        commands.append('**!cmmaxwarn <number>**   - Set the max number of warnings to <number>')
+        commands.append('**!cmbanact <action>**   - Change the action to take when a player has hit their max warnings (mute, kick, ban)')
+        commands.append('**!banword <word>**   - Adds <word> to the list of banned words')
+        commands.append('**!unbanword <word>**   - Removes <word> from the list of banned words')
 
         return commands;
 
@@ -70,18 +77,73 @@ class ChatMod(Plugin):
                 await self.bot.send_message(channel, words)
             else:
                 await self.bot.send_message(channel, 'There are currently no banned words.')
-        elif command == '!banword' and parameters != '':
-            # TODO: check to see if word is already there before banning
-            # TODO: save banned word to list stored in private chat
+                print('There are currently no banned words.')
 
+        elif command == '!cmsettings':
+            print('Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
+            await self.bot.send_message(channel, 'Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
+
+        elif command == '!cmmaxwarn' and parameters != '':
+            if int(parameters) < 0:
+                print('You cant have negative max warnings.')
+                await self.bot.send_message(channel, 'You cant have negative max warnings.')
+            else:
+                firstWord = parameters.split(' ', 1)[0]
+
+                self.maxWarnings = int(firstWord)
+                await self.updateMessage('_maxwarn=', '_maxwarn=' + str(firstWord))
+
+                print('Max Warnings have been set to: ' + str(firstWord))
+                await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(firstWord))
+
+        elif command == '!cmbanact' and parameters != '':
             firstWord = parameters.split(' ', 1)[0]
 
-            self.bannedWords.append(firstWord)
-            print('Banning word: ' + firstWord)
+            if firstWord == 'mute' or firstWord == 'kick' or firstWord == 'ban':
+                self.banAction = firstWord
+                await self.updateMessage('_banact=', '_banact=' + firstWord)
+
+                print('Ban Action has been set to: ' + firstWord)
+                await self.bot.send_message(channel, 'Ban Action has been set to: ' + firstWord)
+            else:
+                print('Invalid Ban Action. Please use mute, kick or ban')
+                await self.bot.send_message(channel, 'Invalid Ban Action. Please use mute, kick or ban')
+
+        elif command == '!banword' and parameters != '':
+            firstWord = parameters.split(' ', 1)[0]
+
+            if not firstWord.lower() in self.bannedWords:
+                self.bannedWords.append(firstWord.lower())
+                await self.bot.send_message(channel, '=' + firstWord.lower())
+
+                print('Banning word: ' + firstWord)
+                await self.bot.send_message(channel, 'Banning word: ' + firstWord)
+                
         elif command == '!unbanword' and parameters != '':
-            # TODO: remove word from banned list
-            # TODO: remove word from list stored in private chat
-            print('Unbanning word: ' + parameters)
+            firstWord = parameters.split(' ', 1)[0]
+
+            if firstWord.lower() in self.bannedWords:
+                self.bannedWords.remove(firstWord)
+                await self.removeMessage(firstWord)
+
+                print('Unbanning word: ' + firstWord)
+                await self.bot.send_message(channel, 'Unbanning word: ' + firstWord)
+
+            else:
+                print('This word is not banned.')
+                await self.bot.send_message(channel, 'This word is not banned.')
+
+    async def removeMessage(self, word):
+        async for message in self.bot.logs_from(self.channel, limit=1000000):
+            if message.content.startswith('='):
+                if message.content[1:] == word:
+                    await self.bot.delete_message(message)
+                    return
+
+    async def updateMessage(self, start, newMessage):
+        async for message in self.bot.logs_from(self.channel, limit=1000000):
+            if message.content.startswith(start):
+                await self.bot.edit_message(message, newMessage)
 
     def isReadingMessages(self):
         return True
@@ -89,11 +151,43 @@ class ChatMod(Plugin):
     async def readMessage(self, message):
         print('Reading message!')
         for word in self.bannedWords:
-            if word in message.content:
-                # TODO: give better warning when banned word used
-                # TODO: do something to user when they use a banned word too much
-                await self.bot.send_message(message.channel, 'Banned word used')
-                print('Banned word used')
+            if word in message.content.lower():
+
+                # TODO: improve this so people can't just bypass the moderating
+                if message.content.startswith('!'):
+                    return
+
+                if message.author.name in self.userWarnings:
+                    self.userWarnings[message.author.name] += 1
+
+                    if self.userWarnings[message.author.name] > self.maxWarnings:
+                        print('Kicking ' + message.author.name + ' for using banned words too often.')
+                        await self.bot.send_message(message.channel, 'Kicking ' + message.author.name + ' for using banned words too often.')
+
+                        await self.applyAction(message.author)
+                        
+                    elif self.userWarnings[message.author.name] == self.maxWarnings:
+                        await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. This is your final warning.')
+                        print(message.author.name + ' has used the banned word: ' + word)
+                    else:
+                        await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
+                        print(message.author.name + ' has used the banned word: ' + word)
+
+                else:
+                    self.userWarnings[message.author.name] = 1
+
+                    await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
+                    print(message.author.name + ' has used the banned word: ' + word)
+
+    async def applyAction(self, user):
+        # TODO: Implement muting
+        if self.banAction == 'mute':
+            pass
+        elif self.banAction == 'kick':
+            await self.bot.kick(user)
+
+        elif self.banAction == 'ban':
+            await self.bot.ban(user)
 
     def shutdown(self):
         print('Shutdown ChatMod')
