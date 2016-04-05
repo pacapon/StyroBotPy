@@ -1,12 +1,13 @@
 from plugin import Plugin
+import os
 import pafy
 import asyncio
 import discord
 
 class Song:
-    def __init__(self, message, song):
-        self.requester = message.author
-        self.channel = message.channel
+    def __init__(self, author, channel, song):
+        self.requester = author
+        self.channel = channel
         self.song = song
     
 class Music(Plugin):
@@ -14,6 +15,7 @@ class Music(Plugin):
     async def initialize(self, bot):
         self.bot = bot
         self.songs = asyncio.Queue()
+        self.songNames = []
         self.play_next_song = asyncio.Event()
         self.starter = None
         self.player = None
@@ -30,6 +32,7 @@ class Music(Plugin):
         self.commands.append('!addsong')
         self.commands.append('!addnq')
         self.commands.append('!songlist')
+        self.commands.append('!songqueue')
 
     def getCommands(self):
         commands = []
@@ -44,6 +47,7 @@ class Music(Plugin):
         commands.append('**!addsong <url> <name>**   - Download song at <url> for playback using <name>') 
         commands.append('**!addnq <url> <name>**   - Download song at <url> for playback using <name> and queue to be played next') 
         commands.append('**!songlist**   - Display the list of available songs to play') 
+        commands.append('**!songqueue**   - Display the list of queued songs') 
 
         return commands
 
@@ -70,43 +74,132 @@ class Music(Plugin):
             await self.bot.join_voice_channel(chan)
             self.starter = author
 
-        #firstWord = parameters.split(' ', 1)[0]
+        elif command == '!leave':
+            if not self.can_control_song(author):
+                return
+            self.starter = None
+            await self.bot.voice.disconnect()
 
+        elif command == '!play':
+            await self.play(channel)
+
+        elif command == '!pause':
+            if not self.can_control_song(author):
+                fmt = 'Only the requester ({0.currentSong.requester}) can control this song.'
+
+                print(fmt.format(self))
+                await self.send_message(channel, fmt.format(self))
+                return
+
+            if self.player.is_playing():
+                self.player.pause()
+
+        elif command == '!resume':
+            if not self.can_control_song(author):
+                fmt = 'Only the requester ({0.currentSong.requester}) can control this song.'
+
+                print(fmt.format(self))
+                await self.bot.send_message(channel, fmt.format(self))
+                return
+
+            if self.player is not None and not self.is_playing():
+                self.player.resume()
+
+        elif command == '!skip':
+            if self.songs.qsize() <= 0:
+                print('Cannot skip, 1 or less songs remaining.')
+                await self.bot.send_message(channel, 'Cannot skip, 1 or less songs remaining.')
+                return
+
+            await self.bot.send_message(channel, 'Skipping song.')
+            await self.skip(channel)
+
+        elif command == '!next' and parameters != '':
+            filename = 'music/' + parameters.strip() + '.mp3'
+            await self.queue_song(author, channel, filename)
+
+        elif command == '!addsong' and parameters != '':
+            pass
+
+        elif command == '!addnq' and parameters != '':
+            pass
+
+        elif command == '!songlist':
+            songFiles = os.listdir('music/')
+            songList = '' 
+
+            for song in songFiles:
+                songList += song
+                songList += '\n'
+
+            print('Songs: \n' + songList)
+            await self.bot.send_message(channel, 'Songs: \n' + songList)
+
+        elif command == '!songqueue':
+
+            if len(self.songNames) == 0:
+                print('There are no queued songs.')
+                await self.bot.send_message(channel, 'There are no queued songs.')
+                return
+
+            songList = ''
+
+            for song in self.songNames:
+                songList += song + '\n'
+
+            print('Queued Songs: \n' + songList)
+            await self.bot.send_message(channel, 'Queued Songs: \n' + songList)
 
     def dl_song(self, message, url, name):
         video = pafy.new(url)
         audio = video.audiostreams
         songFile = audio[0].download(filepath="music/" + name + ".mp3")
 
-    async def skip(self, message):
+    async def skip(self, channel):
         self.player.stop()
-
-        await play(message)
 
     async def stop(self):
         self.player.stop()
 
-    async def play(self, message):
+    async def play(self, channel):
         if self.player is not None and self.player.is_playing():
-            await self.bot.send_message(message.channel, 'Not connected to a channel.')
+            print('Already playing.')
+            await self.bot.send_message(channel, 'Already playing.')
+            return
+
+        if self.songs.empty():
+            print('There are no songs in the queue.')
+            await self.bot.send_message(channel, 'There are no songs in the queue.')
             return
 
         while True:
             if not self.bot.is_voice_connected():
-                await self.bot.send_message(message.channel, 'Not connected to a channel.')
+                print('Not connected to a channel.')
+                await self.bot.send_message(channel, 'Not connected to a channel.')
+                return
+
+            if self.songs.empty():
+                print('Finished playing song queue.')
+                await self.bot.send_message(channel, 'Finished playing song queue.')
                 return
 
             self.play_next_song.clear()
             self.currentSong = await self.songs.get()
+            self.songNames.pop(0)
             self.player = self.bot.voice.create_ffmpeg_player(self.currentSong.song, after=self.toggle_next_song)
             self.player.start()
             fmt = '{0.requester} is now playing "{0.song}"'
+
+            print(fmt.format(self.currentSong))
             await self.bot.send_message(self.currentSong.channel, fmt.format(self.currentSong))
             await self.play_next_song.wait()
 
-    async def queue_song(self, message, filename):
-        await self.songs.put(Song(message, filename))
-        await self.bot.send_message(message.channel, '{} has been queued.'.format(filename))
+    async def queue_song(self, author, channel, filename):
+        await self.songs.put(Song(author, channel, filename))
+        self.songNames.append(filename)
+
+        print('{} has been queued.'.format(filename))
+        await self.bot.send_message(channel, '{} has been queued.'.format(filename))
 
     def toggle_next_song(self):
         self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
