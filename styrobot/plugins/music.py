@@ -119,10 +119,13 @@ class Music(Plugin):
             await self.queue_song(author, channel, filename)
 
         elif command == '!addsong' and parameters != '':
-            pass
-
+            await self.addSong(channel, parameters)
+            
         elif command == '!addnq' and parameters != '':
-            pass
+            filename = await self.addSong(channel, parameters)
+
+            if filename != False:
+                await self.queue_song(author, channel, filename)
 
         elif command == '!songlist':
             songFiles = os.listdir('music/')
@@ -150,11 +153,29 @@ class Music(Plugin):
             print('Queued Songs: \n' + songList)
             await self.bot.send_message(channel, 'Queued Songs: \n' + songList)
 
-    def dl_song(self, message, url, name):
+    async def addSong(self, channel, parameters):
+        args = parameters.split()
+        url = args[0]
+        name = args[1]
+        filename = 'music/' + name + '.mp3'
+
+        try:
+            self.dl_song(channel, url, name)
+        except:
+            print('Failed to download song: ' + name)
+            await self.bot.send_message(channel, 'Failed to download song: ' + name)
+            return False 
+
+        print(name + ' has been successfully added.')
+        await self.bot.send_message(channel, name + ' has been successfully added.')
+
+        return filename
+
+    def dl_song(self, channel, url, name):
         video = pafy.new(url)
         audio = video.audiostreams
         songFile = audio[0].download(filepath="music/" + name + ".mp3")
-
+        
     async def skip(self, channel):
         self.player.stop()
 
