@@ -92,16 +92,6 @@ class Bot(discord.Client):
             for com in commands:
                 helpStr += com + '\n'
 
-        #helpStr += '!joinvoice <name>               - Join voice channel with given name\n'
-        #helpStr += '!leave                                      - Leave the current voice channel\n'
-        #helpStr += '!pause                                     - Pause the currently playing song\n'
-        #helpStr += '!resume                                  - Resume the currently paused song\n'
-        #helpStr += '!next <songname>              - Queue the song to be played next\n'
-        #helpStr += '!play                                        - Play the qued songs\n'
-        #helpStr += '!addsong <url> <name>    - Download song for playback\n'
-        #helpStr += '!addnq <url> <name>        - Download song for playback and queue to be played next\n'
-        #helpStr += '!songlist                                  - Display the current song playlist\n'
-        #helpStr += '!skip                                        - Skip the currently playing song\n'
         return helpStr
 
     async def reloadPlugins(self):
@@ -170,7 +160,9 @@ class Bot(discord.Client):
 
             # Check if a plugin can handle the command and execute it if they can
             if command != '' and plugin.plugin_object.checkForCommand(command):
-                await plugin.plugin_object.executeCommand(message.channel, message.author, command, parameters)
+                await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, parameters)
+
+        return # TODO: Remove this and everything below this
 
         if message.content.startswith('!joinvoice'):
             channel_name = message.content[10:].strip()

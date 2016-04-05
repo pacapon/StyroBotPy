@@ -9,7 +9,7 @@ C_FLAGS = --onefile -p
 TARGET = styrobotpy 
 #################################
 
-all:build copy
+all: build copy-dependencies copy-plugins
 
 build: $(TARGET)
 
@@ -18,19 +18,21 @@ re-all: clean-all all
 run:
 	cd ./dist/ && ./styrobotpy 
 
+runpy:
+	cd ./dist/ && python -m styrobot.py
+
 recopy: clean copy
 
-copy:
+copy: copy-dependencies copy-source
+	
+copy-dependencies:
 	cp -r "./deps/." "./dist/" 
-	cp -r "./styrobot/plugins/" "./dist/plugins/"
 
 	@# This is just how i keep my credentials outside of the repo
 	cp "./credentials.txt" "./dist/credentials.txt" 
 
-test:
-	cp -r "./styrobot/" "./dist/"
-	cp -r "./deps/." "./dist/" 
-	cp "./credentials.txt" "./dist/credentials.txt" 
+copy-source:
+	cp -r "./styrobot/." "./dist/"
 
 copy-plugins:
 	cp -r "./styrobot/plugins/" "./dist/plugins/"

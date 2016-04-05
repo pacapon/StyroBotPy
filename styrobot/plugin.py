@@ -25,7 +25,7 @@ class Plugin:
     # @param command     The command to execute
     # @param parameters  Any extra parameters that followed the command
     @abc.abstractmethod
-    async def executeCommand(self, channel, author, command, parameters): pass
+    async def executeCommand(self, server, channel, author, command, parameters): pass
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something

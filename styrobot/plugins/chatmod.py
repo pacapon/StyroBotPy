@@ -52,12 +52,12 @@ class ChatMod(Plugin):
         commands.append('**!showbanned**   - Shows the list of banned words')
         commands.append('**!cmsettings**   - Show the current settings for the chat mod plugin')
         commands.append('**!cmmaxwarn <number>**   - Set the max number of warnings to <number>')
-        commands.append('**!cmbanact <action>**   - Change the action to take when a player has hit their max warnings (mute, kick, ban)')
+        commands.append('**!cmbanact <action>**   - Change the action to take when a player has hit their max warnings (kick, ban)')
         commands.append('**!cmstatus**   - Check your current warning status')
         commands.append('**!banword <word>**   - Adds <word> to the list of banned words')
         commands.append('**!unbanword <word>**   - Removes <word> from the list of banned words')
 
-        return commands;
+        return commands
 
     def checkForCommand(self, command):
         for com in self.commands:
@@ -67,9 +67,7 @@ class ChatMod(Plugin):
 
         return False
 
-    async def executeCommand(self, channel, author, command, parameters):
-        print('Executing command: ' + command + ' with parameters: ' + parameters + ' on channel: ' + channel.name)
-
+    async def executeCommand(self, server, channel, author, command, parameters):
         if command == '!showbanned':
             if len(self.bannedWords) > 0:
                 words = ''

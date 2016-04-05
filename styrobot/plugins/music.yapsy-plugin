@@ -1,0 +1,9 @@
+[Core]
+Name = Music Plugin
+Module = music
+
+[Documentation]
+Description = A music plugin for playing songs in the voice channels
+Author = Vincent
+Version = 1.0
+Website = None
