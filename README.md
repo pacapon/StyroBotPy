@@ -1,7 +1,7 @@
 # StyroBotPy
 Python version of my custom DiscordBot, based on Rapptz discord.py
 
-# Requirements
+## Requirements
 - Python 3.5
 - discord.py
 - cleverbot.py
