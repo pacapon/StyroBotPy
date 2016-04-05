@@ -46,7 +46,9 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 4. Run "pyinstaller --onefile -p ./styrobot/ ./styrobot/styrobot.py -n styrobotpy"
 5. Make sure you include a "music/" and "images/" folder, as well as opus.dll and credentials.txt in the folder with the EXE (which should be called dist by default)
 
-### Option 3: Manually with Python
+## Running with Python
+If you don't want to create an executable or if your executable isn't working, try running the program with python from the command line.
+
 **WINDOWS & LINUX**
 
 1. Install Python 3.5
