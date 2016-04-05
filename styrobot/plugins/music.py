@@ -59,9 +59,7 @@ class Music(Plugin):
 
         return False
 
-    async def executeCommand(self, server, channel, author, command, parameters):
-        print('Executing command: ' + command + ' with parameters: ' + parameters + ' on channel: ' + channel.name)
-
+    async def executeCommand(self, server, channel, author, command, parameters): 
         if command == '!joinvoice' and parameters != '':
             check = lambda c: c.name == parameters and c.type == discord.ChannelType.voice
 

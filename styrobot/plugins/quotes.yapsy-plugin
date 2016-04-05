@@ -1,0 +1,9 @@
+[Core]
+Name = Quotes Plugin
+Module = quotes
+
+[Documentation]
+Description = A plugin for getting quotes
+Author = Vincent
+Version = 1.0
+Website = None
