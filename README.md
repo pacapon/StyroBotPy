@@ -37,33 +37,22 @@ Python version of my custom DiscordBot, based on Rapptz discord.py
 
 1. Run "make"
 
-### Option 2: Manually
+### Option 2: Manually with PyInstaller
 **WINDOWS & LINUX**
 
 1. Install Python 3.5
 2. Open a cmd window in your project folder
 3. Run "pip install pyinstaller"
-4. Run "pyinstaller --onefile StyroBotPy.py"
-5. Make sure you include a "music/" and "images/" folder, as well as opus.dll and credentials.txt in the folder with the EXE.
+4. Run "pyinstaller --onefile -p ./styrobot/ ./styrobot/styrobot.py -n styrobotpy"
+5. Make sure you include a "music/" and "images/" folder, as well as opus.dll and credentials.txt in the folder with the EXE (which should be called dist by default)
+
+### Option 3: Manually with Python
+**WINDOWS & LINUX**
+
+1. Install Python 3.5
+2. Open a cmd window in the styrobot directory of your project folder
+3. Run "python -m styrobot.py"
+4. Make sure you include a "music/" and "images/" folder, as well as opus.dll and credentials.txt in the folder where styrobot.py is
 
 ## Bot Commands
-Command | Description
---- | ---
-!help | Prints out the commands available
-!hello | Say Hello
-!joinvoice [name] | Join voice channel [name]
-!leave | Leave the current voice channel
-!pause | Pause the currently playing song
-!resume | Resume the currently paused song
-!next [songname] | Queue the song to be played next
-!play | Play the queued songs
-!addsong [url] [name] | Download song at [url] for playback using [name]
-!addnq [url] [name] | Download song at [url] for playback using [name] and queue
-!songlist | Display the current song playlist
-!skip | Skip the currently playing song
-!chat [message] | Send a message to cleverbot
-!f14 | Create an F14!
-!changebotname [name] | Change the name of the bot to [name]
-!shutdown | Shutdown the bot
-
-
+Type "!help" in the chat to see a list of all the commands the bot supports as well as all the commands the plugins support!
