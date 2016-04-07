@@ -28,6 +28,3 @@ class CleverBotChat(Plugin):
         if command == '!chat' and parameters != '':
             response = self.cb.ask(parameters)
             await self.bot.send_message(channel, response)
-
-    def shutdown(self):
-        print('Shutdown CleverBotChat')

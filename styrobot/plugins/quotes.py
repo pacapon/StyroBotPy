@@ -93,6 +93,3 @@ class Quotes(Plugin):
         async for message in self.bot.logs_from(self.settingsChannel, limit=1000000):
             if message.content.startswith(start):
                 await self.bot.edit_message(message, newMessage)
-
-    def shutdown(self):
-        print('Shutdown Quotes')

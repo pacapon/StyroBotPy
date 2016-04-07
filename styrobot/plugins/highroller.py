@@ -55,6 +55,3 @@ class HighRoller(Plugin):
             return True
         except ValueError:
             return False
-
-    def shutdown(self):
-        print('Shutdown HighRoller')

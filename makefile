@@ -19,7 +19,7 @@ run:
 	cd ./dist/ && ./styrobotpy 
 
 runpy:
-	cd ./dist/ && python -m styrobot.py
+	cd ./dist/ && python styrobot.py
 
 recopy: clean copy
 

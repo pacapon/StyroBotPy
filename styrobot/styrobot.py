@@ -43,6 +43,11 @@ class Bot(discord.Client):
             await plugin.plugin_object.initialize(self)
             print(plugin.name + ' Initialized!')
 
+    async def shutdownPlugins(self):
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            await plugin.plugin_object.shutdown()
+            print('Shutdown ' + plugin.name)
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
@@ -63,6 +68,10 @@ class Bot(discord.Client):
         elif message.content.startswith('!shutdown'):
             for role in message.author.roles:
                 if role.permissions.manage_roles: # Change manage_roles if you want a different permission level to be able to do this
+
+                    # Call shutdown on our plugins
+                    await self.shutdownPlugins()
+
                     await self.logout()
                     break
             return 
@@ -103,10 +112,11 @@ class Bot(discord.Client):
                 await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, parameters)
                
   
-styroBot = Bot()
-f = open('credentials.txt', 'r')
-creds = f.read().splitlines()
-email = creds[0]
-password = creds[1]
-f.close()
-styroBot.run(email, password)
+if __name__ == "__main__":
+    styroBot = Bot()
+    f = open('credentials.txt', 'r')
+    creds = f.read().splitlines()
+    email = creds[0]
+    password = creds[1]
+    f.close()
+    styroBot.run(email, password)

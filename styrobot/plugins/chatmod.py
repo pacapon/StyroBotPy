@@ -210,6 +210,3 @@ class ChatMod(Plugin):
             await self.bot.send_message(channel, 'Banning ' + user.name + ' for bad language.') 
 
             await self.bot.ban(user)
-
-    def shutdown(self):
-        print('Shutdown ChatMod')

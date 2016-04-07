@@ -39,4 +39,4 @@ class Plugin:
     async def readMessage(self, message): pass
 
     # Shutdowns the plugin
-    def shutdown(self): pass
+    async def shutdown(self): pass

@@ -229,5 +229,9 @@ class Music(Plugin):
     def is_playing(self):
         return self.player is not None and self.player.is_playing()
 
-    def shutdown(self):
-        print('Shutdown Music')
+    async def shutdown(self):
+        self.starter = None
+        self.player = None
+        if self.bot.voice != None:
+            await self.bot.voice.disconnect()
+
