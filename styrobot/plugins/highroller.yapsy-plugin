@@ -1,0 +1,9 @@
+[Core]
+Name = High Roller Plugin
+Module = highroller
+
+[Documentation]
+Description = A plugin for doing dice and loot rolls
+Author = Vincent
+Version = 1.0
+Website = None
