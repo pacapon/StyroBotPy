@@ -6,14 +6,17 @@ class HighRoller(Plugin):
     async def initialize(self, bot):
         self.bot = bot
         self.commands = []
+        self.callFlip = {}
 
         self.commands.append('!roll')
+        self.commands.append('!callflip')
         self.commands.append('!flipcoin')
         
     def getCommands(self):
         commands = []
 
         commands.append('**!roll <number>**   - Rolls a dice of size <number>')
+        commands.append('**!callflip <name>**   - Call the next coinflip')
         commands.append('**!flipcoin**   - Flips a coin')
 
         return commands
@@ -36,18 +39,55 @@ class HighRoller(Plugin):
                print(author.name + ' rolled a ' + str(result))
                await self.bot.send_message(channel, author.name + ' rolled a ' + str(result))
 
-        elif command == '!flipcoin':
-            result = self.rollDice(2)
+        elif command == '!callflip' and parameters != '':
+            firstWord = parameters.split(' ', 1)[0]
+            firstWord = firstWord.lower()
 
-            if result == 1:
-                print('Heads!')
-                await self.bot.send_message(channel, 'Heads!')
-            else:
-                print('Tails!')
-                await self.bot.send_message(channel, 'Tails!')
+            if firstWord == 'head' or firstWord == 'heads':
+                self.callFlip[author.name] = 'heads'
+            elif firstWord == 'tail' or firstWord == 'tails':
+                self.callFlip[author.name] = 'tails'
+
+            if len(self.callFlip) == 2:
+                p1name = ''
+                p1call = ''
+                message = ''
+                result = self.flipCoin().lower()
+                for key, value in self.callFlip.items():
+                    if p1name == '' and p1call == '':
+                        p1name = key
+                        p1call = value
+                    else:
+                        if result == p1call and result == value:
+                            message = 'It is a tie between ' + p1name + ' and ' + key + '!'
+                        elif result == p1call and result != value:
+                            message = p1call + ' wins the coin flip!' 
+                        elif result == value and result != p1call:
+                            message = key + ' wins the coin flip!' 
+                        else:
+                            message = 'Nobody wins the coin flip!'
+                            
+                        break
+
+                self.callFlip = {}
+                print(message)
+                await self.bot.send_message(channel, message)
+
+        elif command == '!flipcoin':
+            result = self.flipCoin()
+            print(result + '!')
+            await self.bot.send_message(channel, result + '!'); 
 
     def rollDice(self, num):
         return random.randint(1, num)
+
+    def flipCoin(self):
+        result = self.rollDice(2)
+
+        if result == 1:
+            return 'Heads'
+        else:
+            return 'Tails'
 
     def isNumber(self, num):
         try:
