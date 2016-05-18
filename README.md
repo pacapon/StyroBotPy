@@ -1,6 +1,9 @@
 # StyroBotPy
 Python version of my custom DiscordBot, based on Rapptz discord.py
 
+Follow the progress of features on the trello board!  
+https://trello.com/b/6Cma2em4/styrobotpy
+
 ## Requirements
 - Python 3.5
 - discord.py
