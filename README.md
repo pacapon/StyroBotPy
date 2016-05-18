@@ -61,3 +61,11 @@ If you don't want to create an executable or if your executable isn't working, t
 
 ## Bot Commands
 Type "!help" in the chat to see a list of all the commands the bot supports as well as all the commands the plugins support!
+
+## Adding a Bot to a Server
+Once you've created your application and bot under your discord account, you can add that bot to a server. To do so, just paste this url into your browser, changing ### to whatever your application's id is. It will be the long number under App Details called "Client/Application ID".  
+```
+https://discordapp.com/oauth2/authorize?client_id=###&scope=bot&permissions=0
+```
+
+For more info, check out the official documentation here: https://discordapp.com/developers/docs/topics/oauth2
