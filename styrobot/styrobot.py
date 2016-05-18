@@ -119,4 +119,5 @@ if __name__ == "__main__":
     email = creds[0]
     password = creds[1]
     f.close()
-    styroBot.run(email, password)
+    #styroBot.run(email, password)
+    styroBot.run(password)
