@@ -67,13 +67,15 @@ class Bot(discord.Client):
             return
         elif message.content.startswith('!shutdown'):
             for role in message.author.roles:
-                if role.permissions.manage_roles: # Change manage_roles if you want a different permission level to be able to do this
+                if role.permissions.administrator: # Change administrator if you want a different permission level to be able to do this
 
                     # Call shutdown on our plugins
                     await self.shutdownPlugins()
 
                     await self.logout()
-                    break
+                    return 
+
+            await self.send_message(message.channel, message.author.name + ", You do not have permission to do that.")
             return 
         elif message.content.startswith('!hello'):
             await self.send_message(message.channel, 'Hello World!')

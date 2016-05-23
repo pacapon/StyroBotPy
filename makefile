@@ -21,6 +21,8 @@ run:
 runpy:
 	cd ./dist/ && python styrobot.py
 
+rerun: copy-source runpy
+
 recopy: clean copy
 
 copy: copy-dependencies copy-source

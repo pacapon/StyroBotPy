@@ -20,6 +20,7 @@ class Music(Plugin):
         self.starter = None
         self.player = None
         self.currentSong = None
+        self.voiceChannel = None
         self.commands = []
 
         self.commands.append('!joinvoice')
@@ -69,14 +70,16 @@ class Music(Plugin):
                 await self.bot.send_message(channel, 'Invalid channel name.')
                 return
 
-            await self.bot.join_voice_channel(chan)
+            self.voiceChannel = await self.bot.join_voice_channel(chan)
             self.starter = author
 
         elif command == '!leave':
             if not self.can_control_song(author):
                 return
             self.starter = None
-            await self.bot.voice.disconnect()
+
+            await self.voiceChannel.disconnect()
+            self.voiceChannel = None
 
         elif command == '!play':
             await self.play(channel)
@@ -192,7 +195,7 @@ class Music(Plugin):
             return
 
         while True:
-            if not self.bot.is_voice_connected():
+            if not self.bot.is_voice_connected(channel.server):
                 print('Not connected to a channel.')
                 await self.bot.send_message(channel, 'Not connected to a channel.')
                 return
@@ -202,16 +205,31 @@ class Music(Plugin):
                 await self.bot.send_message(channel, 'Finished playing song queue.')
                 return
 
+            if self.voiceChannel is None:
+                print('Not connected to a channel.')
+                await self.bot.send_message(channel, 'Not connected to a channel.')
+                return
+            
             self.play_next_song.clear()
             self.currentSong = await self.songs.get()
             self.songNames.pop(0)
-            self.player = self.bot.voice.create_ffmpeg_player(self.currentSong.song, after=self.toggle_next_song)
+
+            self.player = self.voiceChannel.create_ffmpeg_player(self.currentSong.song, after=self.toggle_next_song)
             self.player.start()
             fmt = '{0.requester} is now playing "{0.song}"'
 
             print(fmt.format(self.currentSong))
             await self.bot.send_message(self.currentSong.channel, fmt.format(self.currentSong))
             await self.play_next_song.wait()
+
+    def getVoiceClient(self, channel):
+        for voice in self.bot.voice_clients:
+            print("1. " + voice.channel.name)
+            print("2. " + channel.name)
+            if voice.channel is channel:
+                return voice
+
+        return None
 
     async def queue_song(self, author, channel, filename):
         await self.songs.put(Song(author, channel, filename))
@@ -232,6 +250,6 @@ class Music(Plugin):
     async def shutdown(self):
         self.starter = None
         self.player = None
-        if self.bot.voice != None:
-            await self.bot.voice.disconnect()
+        if self.voiceChannel != None:
+            await self.voiceChannel.disconnect()
 
