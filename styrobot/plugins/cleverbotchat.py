@@ -1,11 +1,13 @@
 from plugin import Plugin
 import cleverbot
+import logging
 
 class CleverBotChat(Plugin):
     async def initialize(self, bot):
         self.cb = cleverbot.Cleverbot()
         self.bot = bot
         self.commands = []
+        self.logger = logging.getLogger('styrobot.cleverbotchat')
         
         self.commands.append('!chat')
 
@@ -19,12 +21,14 @@ class CleverBotChat(Plugin):
     def checkForCommand(self, command):
         for com in self.commands:
             if com == command:
-                print('Command Found!')
+                self.logger.debug('Command Found!')
                 return True
 
         return False
 
     async def executeCommand(self, server, channel, author, command, parameters):
         if command == '!chat' and parameters != '':
+            self.logger.debug('[!chat] [you]: %s', parameters)
             response = self.cb.ask(parameters)
+            self.logger.debug('[!chat] [cleverbot]: %s', response)
             await self.bot.send_message(channel, response)
