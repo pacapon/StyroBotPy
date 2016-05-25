@@ -1,5 +1,6 @@
 from plugin import Plugin
 import discord
+import styrobot
 import random
 import logging
 
@@ -17,21 +18,12 @@ class Quotes(Plugin):
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
-            self.settingsChannel = discord.utils.get(server.channels, name='quotessettings', type=discord.ChannelType.text)
+            settings = await self.bot.getSettings(server)
 
-            if self.settingsChannel == None:
-                self.logger.debug('No settings found, creating channel')
-                self.settingsChannel = await self.bot.create_channel(server, 'quotessettings')
-
-                await self.bot.send_message(self.settingsChannel, '_channame=' + self.channelName)
-
+            if 'channame' in settings:
+                self.channelName = settings['channame']
             else:
-                self.logger.debug('Settings found, loading channel info')
-
-                async for message in self.bot.logs_from(self.settingsChannel, limit=1000000):
-                    if message.content.startswith('_channame='):
-                        self.channelName = message.content[10:]
-
+                await self.bot.modifySetting(server, 'channame', self.channelName)
 
         self.channel = discord.utils.get(server.channels, name=self.channelName, type=discord.ChannelType.text)
 
@@ -80,7 +72,7 @@ class Quotes(Plugin):
             if newChan != None:
                 self.channel = newChan 
 
-                await self.updateMessage('_channame=', '_channame=' + firstWord)
+                await self.bot.modifySetting(server, 'channame', firstWord)
 
                 self.logger.debug('[!quotechannel]: Quotes will now be taken from channel: %s', firstWord)
                 await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
@@ -88,8 +80,3 @@ class Quotes(Plugin):
             else:
                 self.logger.debug('[!quotechannel]: There is no channel with that name.')
                 await self.bot.send_message(channel, 'There is no channel with that name.')
-
-    async def updateMessage(self, start, newMessage):
-        async for message in self.bot.logs_from(self.settingsChannel, limit=1000000):
-            if message.content.startswith(start):
-                await self.bot.edit_message(message, newMessage)
