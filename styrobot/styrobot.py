@@ -86,7 +86,8 @@ class Bot(discord.Client):
                     await self.logout()
                     return 
 
-            await self.send_message(message.channel, message.author.name + ", You do not have permission to do that.")
+            logger.debug('%s, You do not have permission to do that.', message.author)
+            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
             return 
         elif message.content.startswith('!hello'):
             await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')

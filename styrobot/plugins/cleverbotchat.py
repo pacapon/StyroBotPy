@@ -28,7 +28,7 @@ class CleverBotChat(Plugin):
 
     async def executeCommand(self, server, channel, author, command, parameters):
         if command == '!chat' and parameters != '':
-            self.logger.debug('[!chat] [you]: %s', parameters)
+            self.logger.debug('[!chat] [%s]: %s', author, parameters)
             response = self.cb.ask(parameters)
             self.logger.debug('[!chat] [cleverbot]: %s', response)
             await self.bot.send_message(channel, response)

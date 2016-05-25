@@ -38,7 +38,7 @@ class HighRoller(Plugin):
            if self.isNumber(firstWord) and int(firstWord) > 0:
                result = self.rollDice(int(firstWord))
 
-               self.logger.debug('[!roll]: %s rolled a %s', author.name, str(result))
+               self.logger.debug('[!roll]: %s rolled a %s', author, str(result))
                await self.bot.send_message(channel, '<@' + author.id + '> rolled a ' + str(result))
            else:
                self.logger.debug('[!roll]: You can\'t roll a dice smaller than 1.')
@@ -49,9 +49,9 @@ class HighRoller(Plugin):
             firstWord = firstWord.lower()
 
             if firstWord == 'head' or firstWord == 'heads':
-                self.callFlip[author.name] = ['heads', author.id]
+                self.callFlip[str(author)] = ['heads', author.id]
             elif firstWord == 'tail' or firstWord == 'tails':
-                self.callFlip[author.name] = ['tails', author.id]
+                self.callFlip[str(author)] = ['tails', author.id]
 
             if len(self.callFlip) == 2:
                 p1name = ''

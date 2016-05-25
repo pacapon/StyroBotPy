@@ -114,11 +114,11 @@ class ChatMod(Plugin):
 
         elif command == '!cmstatus':
             if author.name in self.userWarnings:
-                self.logger.debug('[!cmstatus]: %s, you have %s warnings.', author.name, str(self.userWarnings[author.name]))
+                self.logger.debug('[!cmstatus]: %s, you have %s warnings.', author, str(self.userWarnings[author.name]))
                 await self.bot.send_message(channel, '<@' + author.id + '>, you have ' + str(self.userWarnings[author.name]) + ' warnings.')
 
             else:
-                self.logger.debug('[!cmstatus]: %s, you have been given no warnings yet.', author.name)
+                self.logger.debug('[!cmstatus]: %s, you have been given no warnings yet.', author)
                 await self.bot.send_message(channel, '<@' + author.id+ '>, you have been given no warnings yet.')
 
         elif command == '!banword' and parameters != '':
@@ -180,17 +180,17 @@ class ChatMod(Plugin):
                         await self.applyAction(message.author, message.channel)
                         
                     elif self.userWarnings[message.author.name] == int(self.maxWarnings):
-                        await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. This is your final warning.')
-                        self.logger.debug('%s has used the banned word: %s', message.author.name, word)
+                        await self.bot.send_message(message.channel, 'Watch your language, <@' + message.author.id + '>. This is your final warning.')
+                        self.logger.debug('%s has used the banned word: %s', message.author, word)
                     else:
-                        await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
-                        self.logger.debug('%s has used the banned word: %s', message.author.name, word)
+                        await self.bot.send_message(message.channel, 'Watch your language, <@' + message.author.id + '>. You have been warned.')
+                        self.logger.debug('%s has used the banned word: %s', message.author, word)
 
                 else:
                     self.userWarnings[message.author.name] = 1
 
-                    await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
-                    self.logger.debug('%s has used the banned word: %s', message.author.name, word)
+                    await self.bot.send_message(message.channel, 'Watch your language, <@' + message.author.id + '>. You have been warned.')
+                    self.logger.debug('%s has used the banned word: %s', message.author, word)
 
     # Takes in the message's content and removes all markdown so it doesn't
     # screw up the detection as much
