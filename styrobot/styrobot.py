@@ -139,7 +139,33 @@ class Bot(discord.Client):
 
         async for message in self.logs_from(channel, limit=1000000):
             if message.content.startswith('_'):
-                key = message.content.split('=', 1)[0][1:]
+                temp = message.content.split('=', 1)[0][1:]
+                tag = temp.split(':', 1)[0]
+                key = temp.split(':', 1)[1]
+
+                value = message.content.split('=', 1)[1]
+
+                if tag not in result:
+                    result[tag] = {}
+
+                result[tag][key] = value
+
+        return result
+
+    # Private helper for Settings API
+    async def _getSettingsFromChannelForTag(self, channel, plugintag):
+        # Create a dictionary from the settings and return it
+        result = {}
+
+        async for message in self.logs_from(channel, limit=1000000):
+            if message.content.startswith('_'):
+                temp = message.content.split('=', 1)[0][1:]
+                tag = temp.split(':', 1)[0]
+                key = temp.split(':', 1)[1]
+
+                if tag != plugintag:
+                    continue
+
                 value = message.content.split('=', 1)[1]
 
                 result[key] = value
@@ -147,9 +173,9 @@ class Bot(discord.Client):
         return result
 
     # Private helper for Settings API
-    async def _getMessageFromSettings(self, channel, key):
+    async def _getMessageFromSettings(self, channel, tag, key):
         async for message in self.logs_from(channel, limit=1000000):
-            if message.content.startswith('_' + key):
+            if message.content.startswith('_' + tag + ':' + key):
                 return message
 
         return None
@@ -164,21 +190,23 @@ class Bot(discord.Client):
         return channel
 
     # Private helper for Settings API
-    async def _createSetting(self, channel, key, value):
-        logger.debug('Creating Setting [%s] with value [%s]', key, value)
-        await self.send_message(channel, '_{}={}'.format(str(key), str(value)))
+    async def _createSetting(self, channel, tag, key, value):
+        logger.debug('Creating Setting [%s:%s] with value [%s]', tag, key, value)
+        await self.send_message(channel, '_{}:{}={}'.format(str(tag), str(key), str(value)))
 
     # Private helper for Settings API
-    async def _modifySetting(self, message, key, value):
-        logger.debug('Modifying Setting [%s] with value [%s]', key, value)
-        await self.edit_message(message, '_{}={}'.format(str(key), str(value)))
+    async def _modifySetting(self, message, tag, key, value):
+        logger.debug('Modifying Setting [%s:%s] with value [%s]', tag, key, value)
+        await self.edit_message(message, '_{}:{}={}'.format(str(tag), str(key), str(value)))
 
     # Private helper for Settings API
     async def _deleteSetting(self, message):
         logger.debug('Deleting Setting')
         await self.delete_message(message)
 
-    # Gets the settings object (a dictionary where the key is the setting's name and the value is the value) from the server
+    # Gets the settings object from the server
+    # Settings object structure:
+    # object[plugintag][settingname] = settingvalue
     async def getSettings(self, server):
         for srv in self.servers:
             if srv != server:
@@ -192,32 +220,48 @@ class Bot(discord.Client):
         logger.debug('The bot is not part of server %s!', server)
         return None
 
-    # Modifies the setting if it exists and creates it if it doesn't
-    async def modifySetting(self, server, key, value):
+    # Gets the settings object from the server for a specific plugin tag
+    # Settings object structure:
+    # object[settingname] = settingvalue
+    async def getSettingsForTag(self, server, tag):
         for srv in self.servers:
             if srv != server:
                 continue
 
             channel = await self._getSettingsChannel(srv)
-            message = await self._getMessageFromSettings(channel, key)
+
+            logger.debug('Settings constructed for server %s.', srv)
+            return await self._getSettingsFromChannelForTag(channel, tag) 
+
+        logger.debug('The bot is not part of server %s!', server)
+        return None
+
+    # Modifies the setting if it exists and creates it if it doesn't
+    async def modifySetting(self, server, tag, key, value):
+        for srv in self.servers:
+            if srv != server:
+                continue
+
+            channel = await self._getSettingsChannel(srv)
+            message = await self._getMessageFromSettings(channel, tag, key)
 
             if message == None:
-                await self._createSetting(channel, key, value)
+                await self._createSetting(channel, tag, key, value)
             else:
-                await self._modifySetting(message, key, value)
+                await self._modifySetting(message, tag, key, value)
 
             return
 
         logger.debug('The bot is not part of server %s!', server)
 
     # Deletes the setting
-    async def deleteSetting(self, server, key):
+    async def deleteSetting(self, server, tag, key):
         for srv in self.servers:
             if srv != server:
                 continue
 
             channel = await self._getSettingsChannel(srv)
-            message = await self._getMessageFromSettings(channel, key)
+            message = await self._getMessageFromSettings(channel, tag, key)
 
             if message != None:
                 await self._deleteSetting(message)
@@ -227,13 +271,13 @@ class Bot(discord.Client):
         logger.debug('The bot is not part of server %s!', server)
 
     # Returns whether the server has a specific setting
-    async def hasSetting(self, server, key):
+    async def hasSetting(self, server, tag, key):
         for srv in self.servers:
             if srv != server:
                 continue
 
             channel = await self._getSettingsChannel(srv)
-            message = await self._getMessageFromSettings(channel, key)
+            message = await self._getMessageFromSettings(channel, tag, key)
 
             if message == None:
                 return False

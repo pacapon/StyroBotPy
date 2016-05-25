@@ -11,6 +11,7 @@ class Quotes(Plugin):
         self.commands = []
         self.channelName = 'quotes'
         self.logger = logging.getLogger('styrobot.quotes')
+        self.tag = 'quotes'
 
         self.commands.append('!quote')
         self.commands.append('!quotechannel')
@@ -18,12 +19,12 @@ class Quotes(Plugin):
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
-            settings = await self.bot.getSettings(server)
+            settings = await self.bot.getSettingsForTag(server, self.tag)
 
             if 'channame' in settings:
                 self.channelName = settings['channame']
             else:
-                await self.bot.modifySetting(server, 'channame', self.channelName)
+                await self.bot.modifySetting(server, self.tag, 'channame', self.channelName)
 
         self.channel = discord.utils.get(server.channels, name=self.channelName, type=discord.ChannelType.text)
 
@@ -72,7 +73,7 @@ class Quotes(Plugin):
             if newChan != None:
                 self.channel = newChan 
 
-                await self.bot.modifySetting(server, 'channame', firstWord)
+                await self.bot.modifySetting(server, self.tag, 'channame', firstWord)
 
                 self.logger.debug('[!quotechannel]: Quotes will now be taken from channel: %s', firstWord)
                 await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)

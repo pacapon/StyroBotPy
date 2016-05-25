@@ -12,6 +12,7 @@ class ChatMod(Plugin):
         self.userWarnings = {}
         self.maxWarnings = 2 # How many warnings should a user get before action is taken
         self.logger = logging.getLogger('styrobot.chatmod')
+        self.tag = 'chatmod'
 
         # What action to take on a user after they've maxed out their warnings
         # Options are: kick and ban
@@ -28,18 +29,17 @@ class ChatMod(Plugin):
         self.logger.debug('This bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
-
-            settings = await self.bot.getSettings(server)
+            settings = await self.bot.getSettingsForTag(server, self.tag)
 
             if 'maxwarn' in settings:
                 self.maxWarnings = settings['maxwarn']
             else:
-                await self.bot.modifySetting(server, 'maxwarn', self.maxWarnings)
+                await self.bot.modifySetting(server, self.tag, 'maxwarn', self.maxWarnings)
 
             if 'banact' in settings:
                 self.banAction = settings['banact']
             else:
-                await self.bot.modifySetting(server, 'banact', self.banAction)
+                await self.bot.modifySetting(server, self.tag, 'banact', self.banAction)
 
             if 'bannedWords' in settings:
                 words = settings['bannedWords'][1:-1].split(', ')
@@ -47,7 +47,7 @@ class ChatMod(Plugin):
                 for word in words:
                     self.bannedWords.append(word[1:-1])
             else:
-                await self.bot.modifySetting(server, 'bannedWords', '')
+                await self.bot.modifySetting(server, self.tag, 'bannedWords', '')
 
     def getCommands(self):
         commands = []
@@ -95,7 +95,7 @@ class ChatMod(Plugin):
                 firstWord = parameters.split(' ', 1)[0]
 
                 self.maxWarnings = int(firstWord)
-                await self.bot.modifySetting(server, 'maxwarn', firstWord)
+                await self.bot.modifySetting(server, self.tag, 'maxwarn', firstWord)
 
                 self.logger.debug('[!cmmaxwarn]: Max Warnings have been set to: %s', str(firstWord))
                 await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(firstWord))
@@ -105,7 +105,7 @@ class ChatMod(Plugin):
 
             if firstWord == 'kick' or firstWord == 'ban':
                 self.banAction = firstWord
-                await self.bot.modifySetting(server, 'banact', firstWord)
+                await self.bot.modifySetting(server, self.tag, 'banact', firstWord)
 
                 self.logger.debug('[!cmbanact]: Ban Action has been set to: %s', firstWord)
                 await self.bot.send_message(channel, 'Ban Action has been set to: ' + firstWord)
@@ -149,7 +149,7 @@ class ChatMod(Plugin):
                 await self.bot.send_message(channel, 'This word is not banned.')
 
     async def updateBannedWords(self, server):
-        await self.bot.modifySetting(server, 'bannedWords', str(self.bannedWords))
+        await self.bot.modifySetting(server, self.tag, 'bannedWords', str(self.bannedWords))
 
     def isReadingMessages(self):
         return True
