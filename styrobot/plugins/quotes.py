@@ -1,6 +1,7 @@
 from plugin import Plugin
 import discord
 import random
+import logging
 
 class Quotes(Plugin):
 
@@ -8,23 +9,24 @@ class Quotes(Plugin):
         self.bot = bot
         self.commands = []
         self.channelName = 'quotes'
+        self.logger = logging.getLogger('styrobot.quotes')
 
         self.commands.append('!quote')
         self.commands.append('!quotechannel')
 
-        print('This Bot is part of ' + str(len(self.bot.servers)) + ' servers!')
+        self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
             self.settingsChannel = discord.utils.get(server.channels, name='quotessettings', type=discord.ChannelType.text)
 
             if self.settingsChannel == None:
-                print('No settings found, creating channel')
+                self.logger.debug('No settings found, creating channel')
                 self.settingsChannel = await self.bot.create_channel(server, 'quotessettings')
 
                 await self.bot.send_message(self.settingsChannel, '_channame=' + self.channelName)
 
             else:
-                print('Settings found, loading channel info')
+                self.logger.debug('Settings found, loading channel info')
 
                 async for message in self.bot.logs_from(self.settingsChannel, limit=1000000):
                     if message.content.startswith('_channame='):
@@ -34,7 +36,7 @@ class Quotes(Plugin):
         self.channel = discord.utils.get(server.channels, name=self.channelName, type=discord.ChannelType.text)
 
         if self.channel == None:
-            print('No quotes channel found, creating channel')
+            self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
                 
@@ -49,27 +51,25 @@ class Quotes(Plugin):
     def checkForCommand(self, command):
         for com in self.commands:
             if com == command:
-                print('Command Found!')
+                self.logger.debug('Command Found!')
                 return True
 
         return False
 
     async def executeCommand(self, server, channel, author, command, parameters):
-        print('Executing command: ' + command + ' with parameters: ' + parameters + ' on channel: ' + channel.name)
-
         if command == '!quote':
             quotes = []
             async for message in self.bot.logs_from(self.channel, limit=1000000):
                 quotes.append(message)
 
             if len(quotes) == 0:
-                print('There are no quotes in the ' + self.channelName + ' channel!')
+                self.logger.debug('[!quote]: There are no quotes in the %s channel!', self.channelName)
                 await self.bot.send_message(channel, 'There are no quotes in the ' + self.channelName + ' channel!')
                 return
 
             randQuote = quotes[random.randint(0, len(quotes) - 1)]
 
-            print(randQuote.content)
+            self.logger.debug('[!quote]: %s', randQuote.content)
             await self.bot.send_message(channel, randQuote.content)
 
         elif command == '!quotechannel' and parameters != '':
@@ -82,11 +82,11 @@ class Quotes(Plugin):
 
                 await self.updateMessage('_channame=', '_channame=' + firstWord)
 
-                print('Quotes will now be taken from channel: ' + firstWord)
+                self.logger.debug('[!quotechannel]: Quotes will now be taken from channel: %s', firstWord)
                 await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
 
             else:
-                print('There is no channel with that name.')
+                self.logger.debug('[!quotechannel]: There is no channel with that name.')
                 await self.bot.send_message(channel, 'There is no channel with that name.')
 
     async def updateMessage(self, start, newMessage):
