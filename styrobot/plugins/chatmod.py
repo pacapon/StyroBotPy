@@ -1,6 +1,7 @@
 from plugin import Plugin
 import discord
 import re
+import logging
 
 class ChatMod(Plugin):
 
@@ -10,6 +11,7 @@ class ChatMod(Plugin):
         self.commands = []
         self.userWarnings = {}
         self.maxWarnings = 2 # How many warnings should a user get before action is taken
+        self.logger = logging.getLogger('styrobot.chatmod')
 
         # What action to take on a user after they've maxed out their warnings
         # Options are: kick and ban
@@ -23,20 +25,20 @@ class ChatMod(Plugin):
         self.commands.append('!banword')
         self.commands.append('!unbanword')
 
-        print('This Bot is part of ' + str(len(self.bot.servers)) + ' servers!')
+        self.logger.debug('This bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
             self.channel = discord.utils.get(server.channels, name='chatmodsettings', type=discord.ChannelType.text)
 
             if self.channel == None:
-                print('No settings found, creating channel')
+                self.logger.debug('No settings found, creating channel')
                 self.channel = await self.bot.create_channel(server, 'chatmodsettings')
 
                 await self.bot.send_message(self.channel, '_maxwarn=' + self.maxWarnings)
                 await self.bot.send_message(self.channel, '_banact=', + self.banAction)
 
             else:
-                print('Settings found, loading channel info')
+                self.logger.debug('Settings found, loading channel info')
 
                 async for message in self.bot.logs_from(self.channel, limit=1000000):
                     if message.content.startswith('='):
@@ -62,7 +64,7 @@ class ChatMod(Plugin):
     def checkForCommand(self, command):
         for com in self.commands:
             if com == command:
-                print('Command Found!')
+                self.logger.debug('Command Found!')
                 return True
 
         return False
@@ -74,27 +76,27 @@ class ChatMod(Plugin):
                 for word in self.bannedWords:
                     words += word + '\n'
 
-                print(words)
+                self.logger.debug('[!showbanned]: %s', words)
                 await self.bot.send_message(channel, words)
             else:
                 await self.bot.send_message(channel, 'There are currently no banned words.')
-                print('There are currently no banned words.')
+                self.logger.debug('[!showbanned]: There are currently no banned words.')
 
         elif command == '!cmsettings':
-            print('Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
+            self.logger.debug('[!cmsettings]: Max Warnings: %s  Ban Action: %s', str(self.maxWarnings), self.banAction)
             await self.bot.send_message(channel, 'Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
 
         elif command == '!cmmaxwarn' and parameters != '':
             if int(parameters) < 0:
-                print('You cant have negative max warnings.')
-                await self.bot.send_message(channel, 'You cant have negative max warnings.')
+                self.logger.debug('[!cmmaxwarn]: You can\'t have negative max warnings.')
+                await self.bot.send_message(channel, 'You can\'t have negative max warnings.')
             else:
                 firstWord = parameters.split(' ', 1)[0]
 
                 self.maxWarnings = int(firstWord)
                 await self.updateMessage('_maxwarn=', '_maxwarn=' + str(firstWord))
 
-                print('Max Warnings have been set to: ' + str(firstWord))
+                self.logger.debug('[!cmmaxwarn]: Max Warnings have been set to: %s', str(firstWord))
                 await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(firstWord))
 
         elif command == '!cmbanact' and parameters != '':
@@ -104,20 +106,20 @@ class ChatMod(Plugin):
                 self.banAction = firstWord
                 await self.updateMessage('_banact=', '_banact=' + firstWord)
 
-                print('Ban Action has been set to: ' + firstWord)
+                self.logger.debug('[!cmbanact]: Ban Action has been set to: %s', firstWord)
                 await self.bot.send_message(channel, 'Ban Action has been set to: ' + firstWord)
             else:
-                print('Invalid Ban Action. Please use kick or ban')
-                await self.bot.send_message(channel, 'Invalid Ban Action. Please use kick or ban')
+                self.logger.debug('[!cmbanact]: Invalid Ban Action. Please use \'kick\' or \'ban\'')
+                await self.bot.send_message(channel, 'Invalid Ban Action. Please use \'kick\' or \'ban\'')
 
         elif command == '!cmstatus':
             if author.name in self.userWarnings:
-                print(author.name + ', you have ' + str(self.userWarnings[author.name]) + ' warnings.')
-                await self.bot.send_message(channel, author.name + ', you have ' + str(self.userWarnings[author.name]) + ' warnings.')
+                self.logger.debug('[!cmstatus]: %s, you have %s warnings.', author.name, str(self.userWarnings[author.name]))
+                await self.bot.send_message(channel, '<@' + author.id + '>, you have ' + str(self.userWarnings[author.name]) + ' warnings.')
 
             else:
-                print(author.name + ', you have been given no warnings yet.')
-                await self.bot.send_message(channel, author.name + ', you have been given no warnings yet.')
+                self.logger.debug('[!cmstatus]: %s, you have been given no warnings yet.', author.name)
+                await self.bot.send_message(channel, '<@' + author.id+ '>, you have been given no warnings yet.')
 
         elif command == '!banword' and parameters != '':
             firstWord = parameters.split(' ', 1)[0]
@@ -127,7 +129,7 @@ class ChatMod(Plugin):
                 self.bannedWords.append(firstWord)
                 await self.bot.send_message(self.channel, '=' + firstWord)
 
-                print('Banning word: ' + firstWord)
+                self.logger.debug('[!banword]: Banning word: %s', firstWord)
                 await self.bot.send_message(channel, 'Banning word: ' + firstWord)
                 
         elif command == '!unbanword' and parameters != '':
@@ -138,11 +140,11 @@ class ChatMod(Plugin):
                 self.bannedWords.remove(firstWord)
                 await self.removeMessage(firstWord)
 
-                print('Unbanning word: ' + firstWord)
+                self.logger.debug('[!unbanword]: Unbanning word: %s', firstWord)
                 await self.bot.send_message(channel, 'Unbanning word: ' + firstWord)
 
             else:
-                print('This word is not banned.')
+                self.logger.debug('[!unbanword]: This word is not banned.')
                 await self.bot.send_message(channel, 'This word is not banned.')
 
     async def removeMessage(self, word):
@@ -161,7 +163,7 @@ class ChatMod(Plugin):
         return True
 
     async def readMessage(self, message):
-        print('Reading message!')
+        self.logger.debug('Reading message!')
         scrubbed = self.scrubMessage(message.content)
 
         for word in self.bannedWords:
@@ -179,34 +181,34 @@ class ChatMod(Plugin):
                         
                     elif self.userWarnings[message.author.name] == int(self.maxWarnings):
                         await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. This is your final warning.')
-                        print(message.author.name + ' has used the banned word: ' + word)
+                        self.logger.debug('%s has used the banned word: %s', message.author.name, word)
                     else:
                         await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
-                        print(message.author.name + ' has used the banned word: ' + word)
+                        self.logger.debug('%s has used the banned word: %s', message.author.name, word)
 
                 else:
                     self.userWarnings[message.author.name] = 1
 
                     await self.bot.send_message(message.channel, 'Watch your language, ' + message.author.name + '. You have been warned.')
-                    print(message.author.name + ' has used the banned word: ' + word)
+                    self.logger.debug('%s has used the banned word: %s', message.author.name, word)
 
     # Takes in the message's content and removes all markdown so it doesn't
     # screw up the detection as much
     def scrubMessage(self, message):
         scrubbedMessage = re.findall('[^_*\-\'\"\`\~]', message)
-        print(''.join(scrubbedMessage).lower())
+        self.logger.debug('Scrubbed message: %s', ''.join(scrubbedMessage).lower())
 
         return ''.join(scrubbedMessage).lower()
 
     async def applyAction(self, user, channel):
         if self.banAction == 'kick':
-            print('Kicking ' + user.name + ' for bad language.') 
-            await self.bot.send_message(channel, 'Kicking ' + user.name + ' for bad language.') 
+            self.logger.debug('Kicking %s for bad language.', user.name)
+            await self.bot.send_message(channel, 'Kicking <@' + user.id + '> for bad language.') 
 
             await self.bot.kick(user)
 
         elif self.banAction == 'ban':
-            print('Banning ' + user.name + ' for bad language.')
-            await self.bot.send_message(channel, 'Banning ' + user.name + ' for bad language.') 
+            self.logger.debug('Banning %s for bad language.', user.name)
+            await self.bot.send_message(channel, 'Banning <@' + user.id + '> for bad language.') 
 
             await self.bot.ban(user)

@@ -2,6 +2,7 @@
 import discord
 from yapsy.PluginManager import PluginManager
 from plugin import Plugin
+import logging
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
@@ -11,6 +12,15 @@ client = discord.Client()
 class Bot(discord.Client):
     def __init__(self):
         super().__init__()
+
+        # Setup logging for Discord.py
+        self.discordLogger = logging.getLogger('discord')
+        self.discordLogger.setLevel(logging.DEBUG)
+        self.discordHandler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+        self.discordHandler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s'))
+        self.discordLogger.addHandler(self.discordHandler)
+
+        self.logger = logger
 
         # Create Plugin Manager
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
@@ -41,18 +51,19 @@ class Bot(discord.Client):
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             await plugin.plugin_object.initialize(self)
-            print(plugin.name + ' Initialized!')
+            logger.debug('%s Initialized!', plugin.name)
 
     async def shutdownPlugins(self):
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             await plugin.plugin_object.shutdown()
-            print('Shutdown ' + plugin.name)
+            logger.debug('Shutdown %s', plugin.name)
 
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
         print('-----------')
+        logger.debug('Logged in as [%s] [%s]', self.user.name, self.user.id)
 
         await self.reloadPlugins()
 
@@ -78,7 +89,7 @@ class Bot(discord.Client):
             await self.send_message(message.channel, message.author.name + ", You do not have permission to do that.")
             return 
         elif message.content.startswith('!hello'):
-            await self.send_message(message.channel, 'Hello World!')
+            await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')
             return
         elif message.content.startswith('!f14'):
             await self.send_file(message.channel, 'images/f14.jpg')
@@ -88,7 +99,7 @@ class Bot(discord.Client):
             await self.edit_profile(password, username=newName)
             return
         elif message.content.startswith('!reload'):
-            print('Reloading plugins!')
+            logger.debug('Reloading plugins!')
             await self.reloadPlugins()
             return
 
@@ -115,6 +126,14 @@ class Bot(discord.Client):
                
   
 if __name__ == "__main__":
+
+    # Setup logging for the bot
+    logger = logging.getLogger('styrobot')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename='styrobot.log', encoding='utf-8', mode='w')
+    handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s'))
+    logger.addHandler(handler)
+
     styroBot = Bot()
     f = open('credentials.txt', 'r')
     creds = f.read().splitlines()
