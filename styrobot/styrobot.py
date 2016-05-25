@@ -13,6 +13,8 @@ class Bot(discord.Client):
     def __init__(self):
         super().__init__()
 
+        self.settingsChannelName = 'botsettings' # change this if you want your bot settings channel to have a different name
+
         # Setup logging for Discord.py
         self.discordLogger = logging.getLogger('discord')
         self.discordLogger.setLevel(logging.DEBUG)
@@ -124,7 +126,96 @@ class Bot(discord.Client):
             # Check if a plugin can handle the command and execute it if they can
             if command != '' and plugin.plugin_object.checkForCommand(command):
                 await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, parameters)
-               
+
+    async def _createSettingsChannel(self, server):
+        logger.debug('No settings found in server %s, creating settings.', server)
+        return await self.create_channel(server, self.settingsChannelName)
+
+    async def _getSettingsFromChannel(self, channel):
+        # Create a dictionary from the settings and return it
+        result = {}
+
+        async for message in self.logs_from(channel, limit=1000000):
+            if message.content.startswith('_'):
+                key = message.content.split('=', 1)[0][1:]
+                value = message.content.split('=', 1)[1]
+
+                result[key] = value
+
+        return result
+
+    async def _getMessageFromSettings(self, channel, key):
+        async for message in self.logs_from(channel, limit=1000000):
+            if message.content.startswith('_' + key):
+                return message
+
+        return None
+ 
+    async def _getSettingsChannel(self, server):
+        channel = discord.utils.get(server.channels, name=self.settingsChannelName, type=discord.ChannelType.text)
+
+        if channel == None:
+            channel = await self._createSettingsChannel(server)
+
+        return channel
+
+    async def _createSetting(self, channel, key, value):
+        logger.debug('Creating Setting [%s] with value [%s]', key, value)
+        await self.send_message(channel, '_{}={}'.format(str(key), str(value)))
+
+    async def _modifySetting(self, message, key, value):
+        logger.debug('Modifying Setting [%s] with value [%s]', key, value)
+        await self.edit_message(message, '_{}={}'.format(str(key), str(value)))
+
+    async def _deleteSetting(self, message):
+        logger.debug('Deleting Setting')
+        await self.delete_message(message)
+
+    async def getSettings(self, server):
+        for srv in self.servers:
+            if srv != server:
+                continue
+
+            channel = await _getSettingsChannel(srv)
+
+            logger.debug('Settings constructed for server %s.', srv)
+            return await self._getSettingsFromChannel(channel) 
+
+        logger.debug('The bot is not part of server %s!', server)
+        return None
+
+    async def modifySetting(self, server, key, value):
+        for srv in self.servers:
+            if srv != server:
+                continue
+
+            channel = await self._getSettingsChannel(srv)
+            message = await self._getMessageFromSettings(channel, key)
+
+            if message == None:
+                await self._createSetting(channel, key, value)
+            else:
+                await self._modifySetting(message, key, value)
+
+            return
+
+        logger.debug('The bot is not part of server %s!', server)
+
+    async def deleteSetting(self, server, key):
+        for srv in self.servers:
+            if srv != server:
+                continue
+
+            channel = await self._getSettingsChannel(srv)
+            message = await self._getMessageFromSettings(channel, key)
+
+            if message != None:
+                await self._deleteSetting(message)
+
+            return
+
+        logger.debug('The bot is not part of server %s!', server)
+
   
 if __name__ == "__main__":
 
