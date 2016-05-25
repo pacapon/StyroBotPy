@@ -28,25 +28,26 @@ class ChatMod(Plugin):
         self.logger.debug('This bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
-            self.channel = discord.utils.get(server.channels, name='chatmodsettings', type=discord.ChannelType.text)
 
-            if self.channel == None:
-                self.logger.debug('No settings found, creating channel')
-                self.channel = await self.bot.create_channel(server, 'chatmodsettings')
+            settings = await self.bot.getSettings(server)
 
-                await self.bot.send_message(self.channel, '_maxwarn=' + self.maxWarnings)
-                await self.bot.send_message(self.channel, '_banact=', + self.banAction)
-
+            if 'maxwarn' in settings:
+                self.maxWarnings = settings['maxwarn']
             else:
-                self.logger.debug('Settings found, loading channel info')
+                await self.bot.modifySetting(server, 'maxwarn', self.maxWarnings)
 
-                async for message in self.bot.logs_from(self.channel, limit=1000000):
-                    if message.content.startswith('='):
-                        self.bannedWords.append(message.content[1:])
-                    elif message.content.startswith('_maxwarn='):
-                        self.maxWarnings = message.content[9:]
-                    elif message.content.startswith('_banact='):
-                        self.banAction = message.content[8:]
+            if 'banact' in settings:
+                self.banAction = settings['banact']
+            else:
+                await self.bot.modifySetting(server, 'banact', self.banAction)
+
+            if 'bannedWords' in settings:
+                words = settings['bannedWords'][1:-1].split(', ')
+
+                for word in words:
+                    self.bannedWords.append(word[1:-1])
+            else:
+                await self.bot.modifySetting(server, 'bannedWords', '')
 
     def getCommands(self):
         commands = []
@@ -94,7 +95,7 @@ class ChatMod(Plugin):
                 firstWord = parameters.split(' ', 1)[0]
 
                 self.maxWarnings = int(firstWord)
-                await self.updateMessage('_maxwarn=', '_maxwarn=' + str(firstWord))
+                await self.bot.modifySetting(server, 'maxwarn', firstWord)
 
                 self.logger.debug('[!cmmaxwarn]: Max Warnings have been set to: %s', str(firstWord))
                 await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(firstWord))
@@ -104,7 +105,7 @@ class ChatMod(Plugin):
 
             if firstWord == 'kick' or firstWord == 'ban':
                 self.banAction = firstWord
-                await self.updateMessage('_banact=', '_banact=' + firstWord)
+                await self.bot.modifySetting(server, 'banact', firstWord)
 
                 self.logger.debug('[!cmbanact]: Ban Action has been set to: %s', firstWord)
                 await self.bot.send_message(channel, 'Ban Action has been set to: ' + firstWord)
@@ -127,7 +128,7 @@ class ChatMod(Plugin):
 
             if not firstWord in self.bannedWords:
                 self.bannedWords.append(firstWord)
-                await self.bot.send_message(self.channel, '=' + firstWord)
+                await self.updateBannedWords(server)
 
                 self.logger.debug('[!banword]: Banning word: %s', firstWord)
                 await self.bot.send_message(channel, 'Banning word: ' + firstWord)
@@ -138,7 +139,7 @@ class ChatMod(Plugin):
 
             if firstWord in self.bannedWords:
                 self.bannedWords.remove(firstWord)
-                await self.removeMessage(firstWord)
+                await self.updateBannedWords(server)
 
                 self.logger.debug('[!unbanword]: Unbanning word: %s', firstWord)
                 await self.bot.send_message(channel, 'Unbanning word: ' + firstWord)
@@ -147,17 +148,8 @@ class ChatMod(Plugin):
                 self.logger.debug('[!unbanword]: This word is not banned.')
                 await self.bot.send_message(channel, 'This word is not banned.')
 
-    async def removeMessage(self, word):
-        async for message in self.bot.logs_from(self.channel, limit=1000000):
-            if message.content.startswith('='):
-                if message.content[1:] == word:
-                    await self.bot.delete_message(message)
-                    return
-
-    async def updateMessage(self, start, newMessage):
-        async for message in self.bot.logs_from(self.channel, limit=1000000):
-            if message.content.startswith(start):
-                await self.bot.edit_message(message, newMessage)
+    async def updateBannedWords(self, server):
+        await self.bot.modifySetting(server, 'bannedWords', str(self.bannedWords))
 
     def isReadingMessages(self):
         return True
@@ -195,7 +187,7 @@ class ChatMod(Plugin):
     # Takes in the message's content and removes all markdown so it doesn't
     # screw up the detection as much
     def scrubMessage(self, message):
-        scrubbedMessage = re.findall('[^_*\-\'\"\`\~]', message)
+        scrubbedMessage = re.findall('[^_*\-\'\"\`\~,]', message)
         self.logger.debug('Scrubbed message: %s', ''.join(scrubbedMessage).lower())
 
         return ''.join(scrubbedMessage).lower()

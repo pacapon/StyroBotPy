@@ -127,10 +127,12 @@ class Bot(discord.Client):
             if command != '' and plugin.plugin_object.checkForCommand(command):
                 await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, parameters)
 
+    # Private helper for Settings API
     async def _createSettingsChannel(self, server):
         logger.debug('No settings found in server %s, creating settings.', server)
         return await self.create_channel(server, self.settingsChannelName)
 
+    # Private helper for Settings API
     async def _getSettingsFromChannel(self, channel):
         # Create a dictionary from the settings and return it
         result = {}
@@ -144,6 +146,7 @@ class Bot(discord.Client):
 
         return result
 
+    # Private helper for Settings API
     async def _getMessageFromSettings(self, channel, key):
         async for message in self.logs_from(channel, limit=1000000):
             if message.content.startswith('_' + key):
@@ -151,6 +154,7 @@ class Bot(discord.Client):
 
         return None
  
+    # Private helper for Settings API
     async def _getSettingsChannel(self, server):
         channel = discord.utils.get(server.channels, name=self.settingsChannelName, type=discord.ChannelType.text)
 
@@ -159,24 +163,28 @@ class Bot(discord.Client):
 
         return channel
 
+    # Private helper for Settings API
     async def _createSetting(self, channel, key, value):
         logger.debug('Creating Setting [%s] with value [%s]', key, value)
         await self.send_message(channel, '_{}={}'.format(str(key), str(value)))
 
+    # Private helper for Settings API
     async def _modifySetting(self, message, key, value):
         logger.debug('Modifying Setting [%s] with value [%s]', key, value)
         await self.edit_message(message, '_{}={}'.format(str(key), str(value)))
 
+    # Private helper for Settings API
     async def _deleteSetting(self, message):
         logger.debug('Deleting Setting')
         await self.delete_message(message)
 
+    # Gets the settings object (a dictionary where the key is the setting's name and the value is the value) from the server
     async def getSettings(self, server):
         for srv in self.servers:
             if srv != server:
                 continue
 
-            channel = await _getSettingsChannel(srv)
+            channel = await self._getSettingsChannel(srv)
 
             logger.debug('Settings constructed for server %s.', srv)
             return await self._getSettingsFromChannel(channel) 
@@ -184,6 +192,7 @@ class Bot(discord.Client):
         logger.debug('The bot is not part of server %s!', server)
         return None
 
+    # Modifies the setting if it exists and creates it if it doesn't
     async def modifySetting(self, server, key, value):
         for srv in self.servers:
             if srv != server:
@@ -201,6 +210,7 @@ class Bot(discord.Client):
 
         logger.debug('The bot is not part of server %s!', server)
 
+    # Deletes the setting
     async def deleteSetting(self, server, key):
         for srv in self.servers:
             if srv != server:
@@ -215,6 +225,23 @@ class Bot(discord.Client):
             return
 
         logger.debug('The bot is not part of server %s!', server)
+
+    # Returns whether the server has a specific setting
+    async def hasSetting(self, server, key):
+        for srv in self.servers:
+            if srv != server:
+                continue
+
+            channel = await self._getSettingsChannel(srv)
+            message = await self._getMessageFromSettings(channel, key)
+
+            if message == None:
+                return False
+            else:
+                return True
+
+        logger.debug('The bot is not part of server %s!', server)
+        return False
 
   
 if __name__ == "__main__":
