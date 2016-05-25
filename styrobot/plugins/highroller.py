@@ -1,5 +1,6 @@
 from plugin import Plugin
 import random
+import logging
 
 class HighRoller(Plugin):
     
@@ -7,6 +8,7 @@ class HighRoller(Plugin):
         self.bot = bot
         self.commands = []
         self.callFlip = {}
+        self.logger = logging.getLogger('styrobot.highroller')
 
         self.commands.append('!roll')
         self.commands.append('!callflip')
@@ -24,7 +26,7 @@ class HighRoller(Plugin):
     def checkForCommand(self, command):
         for com in self.commands:
             if com == command:
-                print('Command Found!')
+                self.logger.debug('Command Found!')
                 return True
 
         return False
@@ -36,46 +38,55 @@ class HighRoller(Plugin):
            if self.isNumber(firstWord) and int(firstWord) > 0:
                result = self.rollDice(int(firstWord))
 
-               print(author.name + ' rolled a ' + str(result))
-               await self.bot.send_message(channel, author.name + ' rolled a ' + str(result))
+               self.logger.debug('[!roll]: %s rolled a %s', author.name, str(result))
+               await self.bot.send_message(channel, '<@' + author.id + '> rolled a ' + str(result))
+           else:
+               self.logger.debug('[!roll]: You can\'t roll a dice smaller than 1.')
+               await self.bot.send_message(channel, 'You can\'t roll a dice smaller than 1.')
 
         elif command == '!callflip' and parameters != '':
             firstWord = parameters.split(' ', 1)[0]
             firstWord = firstWord.lower()
 
             if firstWord == 'head' or firstWord == 'heads':
-                self.callFlip[author.name] = 'heads'
+                self.callFlip[author.name] = ['heads', author.id]
             elif firstWord == 'tail' or firstWord == 'tails':
-                self.callFlip[author.name] = 'tails'
+                self.callFlip[author.name] = ['tails', author.id]
 
             if len(self.callFlip) == 2:
                 p1name = ''
                 p1call = ''
+                p1id = ''
                 message = ''
+                logmessage = ''
                 result = self.flipCoin().lower()
                 for key, value in self.callFlip.items():
                     if p1name == '' and p1call == '':
                         p1name = key
-                        p1call = value
+                        p1call = value[0]
+                        p1id = value[1]
                     else:
-                        if result == p1call and result == value:
-                            message = 'It is a tie between ' + p1name + ' and ' + key + '!'
-                        elif result == p1call and result != value:
-                            message = p1call + ' wins the coin flip!' 
-                        elif result == value and result != p1call:
-                            message = key + ' wins the coin flip!' 
+                        if result == p1call and result == value[0]:
+                            message = 'It is a tie between <@' + p1id + '> and <@' + value[1] + '>!'
+                            logmessage = 'It is a tie between ' + p1name + ' and ' + key + '!'
+                        elif result == p1call and result != value[0]:
+                            message = '<@' + p1id + '> wins the coin flip!' 
+                            logmessage = p1name + ' wins the coin flip!' 
+                        elif result == value[0] and result != p1call:
+                            message = '<@' + value[1] + '> wins the coin flip!' 
+                            logmessage = key + ' wins the coin flip!' 
                         else:
                             message = 'Nobody wins the coin flip!'
                             
                         break
 
                 self.callFlip = {}
-                print(message)
+                self.logger.debug('[!callflip]: %s', logmessage)
                 await self.bot.send_message(channel, message)
 
         elif command == '!flipcoin':
             result = self.flipCoin()
-            print(result + '!')
+            self.logger.debug('[!flipcoin]: %s!', result)
             await self.bot.send_message(channel, result + '!'); 
 
     def rollDice(self, num):
