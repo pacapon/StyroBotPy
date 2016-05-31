@@ -1,0 +1,9 @@
+[Core]
+Name = Test Plugin
+Module = test 
+
+[Documentation]
+Description = A plugin for getting quotes
+Author = Vincent
+Version = 1.0
+Website = None

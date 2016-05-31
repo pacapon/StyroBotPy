@@ -40,6 +40,8 @@ class Bot(discord.Client):
             commands = plugin.plugin_object.getCommands()
 
             helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
+            helpStr += 'Tag: ' + plugin.plugin_object.tag + '\n'
+            helpStr += 'ShortTag: ' + plugin.plugin_object.shortTag + '\n'
 
             for com in commands:
                 helpStr += com + '\n'
@@ -52,7 +54,7 @@ class Bot(discord.Client):
         self.pluginManager.loadPlugins()
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            await plugin.plugin_object.initialize(self)
+            await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
 
     async def shutdownPlugins(self):
