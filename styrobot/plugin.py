@@ -1,4 +1,5 @@
 import abc
+import logging
 
 class Plugin:
     __metaclass__ = abc.ABCMeta
@@ -6,9 +7,11 @@ class Plugin:
     # Private initialize function
     # DO NOT OVERRIDE OR CALL EXPLICITELY
     async def _init(self, name, bot): 
+        self.bot = bot
         self.tag = name
         self.shortTag = name[0]
         self.commands = []
+        self.logger = logging.getLogger('styrobot.' + name)
 
         await self.initialize(bot)
         
@@ -39,6 +42,8 @@ class Plugin:
 
         return commands
 
+    # Private helper function to parse the commands array and produce a dictionary
+    # which contains all the information for each command
     def _parseCommands(self):
         commands = {}
         for com in self.commands:
@@ -56,17 +61,30 @@ class Plugin:
             commands[name]['paramNames'] = paramNames
             commands[name]['description'] = description
 
-            print('Name: ', name)
-            print('NumParams: ', numParams)
-            print('ParamNames: ', paramNames)
-            print('Description: ', description)
-
         return commands
 
     # Checks if this plugin handles the command provided by the user 
-    # @return  True if you can handle this command, False otherwise 
-    @abc.abstractmethod
-    def checkForCommand(self, command): pass
+    # @param tag      The tag which identifies the plugin (this could be their short tag)
+    # @param command  The command the user wants to execute
+    # @param args     The remaining text, which will be parsed into args for execution
+    # @return         Returns False if it can't handle it. If it can, it returns the parsed args in an array
+    def checkForCommand(self, tag, command, args): 
+        if tag != self.tag and tag != self.shortTag:
+            return False
+
+        for key, value in self.parsedCommands.items():
+            if key == command:
+                if value['numParams'] == '*':
+                    self.logger.debug('Command Found!')
+                    return list(args)
+                else:
+                    temp = args.split(' ')
+                    num = int(value['numParams'])
+
+                    self.logger.debug('Command Found!')
+                    return temp[num:]
+
+        return False
 
     # Executes the chat command 
     # @param channel     The discord channel this command was executed in
@@ -74,7 +92,13 @@ class Plugin:
     # @param command     The command to execute
     # @param args        Any extra parameters that followed the command
     async def executeCommand(self, server, channel, author, command, *args):
-        await getattr(self, '_' + command + '_')(server, channel, author, *args)
+        num = self.parsedCommands[command]['numParams']
+
+        if num != '*' and int(num) == 0:
+            await getattr(self, '_' + command + '_')(server, channel, author)
+        else:
+            await getattr(self, '_' + command + '_')(server, channel, author, *args)
+
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something

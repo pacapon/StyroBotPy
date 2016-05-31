@@ -108,16 +108,23 @@ class Bot(discord.Client):
             await self.reloadPlugins()
             return
 
+        tag = ''
         command = ''
-        parameters = ''
+        args = ''
             
         # If we have a command, extract the command and parameters (if any)
         if message.content.startswith('!'):
-            content =  message.content.split(' ', 1) 
-            command = content[0]
+            content =  message.content.split(' ', 2) 
+            tag = content[0][1:]
 
             if len(content) > 1:
-                parameters = content[1]
+                command = content[1]
+            else:
+                self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
+                return
+
+            if len(content) > 2:
+                args = content[2]
 
         # Go through each of the plugins and see if they can execute the command
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -125,9 +132,14 @@ class Bot(discord.Client):
             if plugin.plugin_object.isReadingMessages():
                 await plugin.plugin_object.readMessage(message)
 
+            # TODO: Check for tag/command collisions here and resolve before letting the plugins handle it
+
             # Check if a plugin can handle the command and execute it if they can
-            if command != '' and plugin.plugin_object.checkForCommand(command):
-                await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, parameters)
+            if tag != '' and command != '': 
+                temp = plugin.plugin_object.checkForCommand(tag, command, args)
+
+                if temp != False:
+                    await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, temp)
 
     # Private helper for Settings API
     async def _createSettingsChannel(self, server):

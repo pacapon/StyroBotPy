@@ -7,9 +7,7 @@ import logging
 class Test(Plugin):
 
     async def initialize(self, bot):
-        self.bot = bot
         self.channelName = 'quotes'
-        self.logger = logging.getLogger('styrobot.test')
         self.tag = 'quotes'
         self.shortTag = 'q'
 
@@ -35,43 +33,43 @@ class Test(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
-    def checkForCommand(self, command):
-        for com in self.commands:
-            if com == command:
-                self.logger.debug('Command Found!')
-                return True
+    async def _quote_(self, server, channel, author):
+        quotes = []
+        async for message in self.bot.logs_from(self.channel, limit=1000000):
+            quotes.append(message)
 
-        return False
+        if len(quotes) == 0:
+            self.logger.debug('[quote]: There are no quotes in the %s channel!', self.channelName)
+            await self.bot.send_message(channel, 'There are no quotes in the ' + self.channelName + ' channel!')
+            return
 
-    async def executeCommand(self, server, channel, author, command, parameters):
-        if command == '!quote':
-            quotes = []
-            async for message in self.bot.logs_from(self.channel, limit=1000000):
-                quotes.append(message)
+        randQuote = quotes[random.randint(0, len(quotes) - 1)]
 
-            if len(quotes) == 0:
-                self.logger.debug('[!quote]: There are no quotes in the %s channel!', self.channelName)
-                await self.bot.send_message(channel, 'There are no quotes in the ' + self.channelName + ' channel!')
-                return
+        self.logger.debug('[quote]: %s', randQuote.content)
+        await self.bot.send_message(channel, randQuote.content)
 
-            randQuote = quotes[random.randint(0, len(quotes) - 1)]
+    async def _channel_(self, server, channel, author):
+        self.logger.debug('[channel]: The current quote channel is: %s', self.channelName)
+        await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
-            self.logger.debug('[!quote]: %s', randQuote.content)
-            await self.bot.send_message(channel, randQuote.content)
+    async def _setchannel_(self, server, channel, author, channame):
+        newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
 
-        elif command == '!quotechannel' and parameters != '':
-            firstWord = parameters.split(' ', 1)[0]
+        if newChan != None:
+            self.channel = newChan 
+            self.channelName = channam
 
-            newChan = discord.utils.get(server.channels, name=firstWord, type=discord.ChannelType.text)
+            await self.bot.modifySetting(server, self.tag, 'channame', firstWord)
 
-            if newChan != None:
-                self.channel = newChan 
+            self.logger.debug('[setchannel]: Quotes will now be taken from channel: %s', firstWord)
+            await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
 
-                await self.bot.modifySetting(server, self.tag, 'channame', firstWord)
+        else:
+            self.logger.debug('[setchannel]: There is no channel with that name.')
+            await self.bot.send_message(channel, 'There is no channel with that name.')
 
-                self.logger.debug('[!quotechannel]: Quotes will now be taken from channel: %s', firstWord)
-                await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
+    async def _add_(self, server, channel, author, text):
+        print('[add]: ', text)
 
-            else:
-                self.logger.debug('[!quotechannel]: There is no channel with that name.')
-                await self.bot.send_message(channel, 'There is no channel with that name.')
+    async def _create_(self, server, channel, author, quote, quoter):
+        print('[create]: ', quote, ' - ', quoter)
