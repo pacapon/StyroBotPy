@@ -53,16 +53,17 @@ class Test(Plugin):
         await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
     async def _setchannel_(self, server, channel, author, channame):
+        self.logger.debug('[setchannel]: Finding channel with name [%s]', channame)
         newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
 
         if newChan != None:
             self.channel = newChan 
-            self.channelName = channam
+            self.channelName = channame
 
-            await self.bot.modifySetting(server, self.tag, 'channame', firstWord)
+            await self.bot.modifySetting(server, self.tag, 'channame', channame)
 
-            self.logger.debug('[setchannel]: Quotes will now be taken from channel: %s', firstWord)
-            await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
+            self.logger.debug('[setchannel]: Quotes will now be taken from channel: %s', channame)
+            await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + channame)
 
         else:
             self.logger.debug('[setchannel]: There is no channel with that name.')

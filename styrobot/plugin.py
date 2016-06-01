@@ -75,14 +75,25 @@ class Plugin:
         for key, value in self.parsedCommands.items():
             if key == command:
                 if value['numParams'] == '*':
+                    temp = []
+                    temp.append(args)
                     self.logger.debug('Command Found!')
-                    return list(args)
+                    self.logger.debug('Args: %s', temp)
+                    return temp
                 else:
                     temp = args.split(' ')
                     num = int(value['numParams'])
 
                     self.logger.debug('Command Found!')
-                    return temp[num:]
+
+                    # For some reason doing array[:0] will still slice elements so we need to check
+                    # for this edge case
+                    if len(temp)-num == 0:
+                        self.logger.debug('Args: %s', temp)
+                        return temp
+                    else:
+                        self.logger.debug('Args: %s', temp[:len(temp)-num]) 
+                        return temp[:len(temp)-num]
 
         return False
 
@@ -91,12 +102,14 @@ class Plugin:
     # @param author      The user which executed this command
     # @param command     The command to execute
     # @param args        Any extra parameters that followed the command
-    async def executeCommand(self, server, channel, author, command, *args):
+    async def executeCommand(self, server, channel, author, command, args):
         num = self.parsedCommands[command]['numParams']
 
         if num != '*' and int(num) == 0:
+            self.logger.debug('Executing command [%s]')
             await getattr(self, '_' + command + '_')(server, channel, author)
         else:
+            self.logger.debug('Executing command [%s] with arguments [%s]', command, str(args)[1:-1])
             await getattr(self, '_' + command + '_')(server, channel, author, *args)
 
 

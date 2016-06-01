@@ -70,6 +70,7 @@ class Bot(discord.Client):
         logger.debug('Logged in as [%s] [%s]', self.user.name, self.user.id)
 
         await self.reloadPlugins()
+        print('Plugins initialized!')
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -120,12 +121,13 @@ class Bot(discord.Client):
             if len(content) > 1:
                 command = content[1]
             else:
-                self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
+                await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
                 return
 
             if len(content) > 2:
                 args = content[2]
 
+        found = False
         # Go through each of the plugins and see if they can execute the command
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Let the plugin read the message
@@ -140,6 +142,10 @@ class Bot(discord.Client):
 
                 if temp != False:
                     await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, temp)
+                    found = True
+
+        if not found and message.content.startswith('!'):
+            await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
 
     # Private helper for Settings API
     async def _createSettingsChannel(self, server):
