@@ -6,25 +6,23 @@ import logging
 class ChatMod(Plugin):
 
     async def initialize(self, bot):
-        self.bot = bot
         self.bannedWords = []
-        self.commands = []
         self.userWarnings = {}
         self.maxWarnings = 2 # How many warnings should a user get before action is taken
-        self.logger = logging.getLogger('styrobot.chatmod')
         self.tag = 'chatmod'
+        self.shortTag = 'cm'
 
         # What action to take on a user after they've maxed out their warnings
         # Options are: kick and ban
         self.banAction = 'kick' 
 
-        self.commands.append('!showbanned')
-        self.commands.append('!cmsettings')
-        self.commands.append('!cmmaxwarn')
-        self.commands.append('!cmbanact')
-        self.commands.append('!cmstatus')
-        self.commands.append('!banword')
-        self.commands.append('!unbanword')
+        self.commands.append('<showbanned><0><Shows the list of banned words>')
+        self.commands.append('<settings><0><Show the current settings for the chat mod plugin>')
+        self.commands.append('<setmaxwarn><1>(number)<Set the max number of warnings to [number]>')
+        self.commands.append('<setbanact><1>(action)<Change the action to take when a player has hit their max warnings (kick, ban)>')
+        self.commands.append('<status><0><Check your current warning status>')
+        self.commands.append('<ban><1>(word)<Adds [word] to the list of banned words>')
+        self.commands.append('<unban><1>(word)<Removes [word] from the list of banned words')
 
         self.logger.debug('This bot is part of %s servers!', str(len(self.bot.servers)))
 
@@ -49,104 +47,76 @@ class ChatMod(Plugin):
             else:
                 await self.bot.modifySetting(server, self.tag, 'bannedWords', '')
 
-    def getCommands(self):
-        commands = []
+    async def _showbanned_(self, server, channel, author):
+        if len(self.bannedWords) > 0:
+            words = ''
+            for word in self.bannedWords:
+                words += word + '\n'
 
-        commands.append('**!showbanned**   - Shows the list of banned words')
-        commands.append('**!cmsettings**   - Show the current settings for the chat mod plugin')
-        commands.append('**!cmmaxwarn <number>**   - Set the max number of warnings to <number>')
-        commands.append('**!cmbanact <action>**   - Change the action to take when a player has hit their max warnings (kick, ban)')
-        commands.append('**!cmstatus**   - Check your current warning status')
-        commands.append('**!banword <word>**   - Adds <word> to the list of banned words')
-        commands.append('**!unbanword <word>**   - Removes <word> from the list of banned words')
+            self.logger.debug('[showbanned]: %s', words)
+            await self.bot.send_message(channel, words)
+        else:
+            await self.bot.send_message(channel, 'There are currently no banned words.')
+            self.logger.debug('[showbanned]: There are currently no banned words.')
 
-        return commands
+    async def _settings_(self, server, channel, author):
+        self.logger.debug('[cmsettings]: Max Warnings: %s  Ban Action: %s', str(self.maxWarnings), self.banAction)
+        await self.bot.send_message(channel, 'Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
 
-    def checkForCommand(self, command):
-        for com in self.commands:
-            if com == command:
-                self.logger.debug('Command Found!')
-                return True
+    async def _setmaxwarn_(self, server, channel, author, number):
+        if int(number) < 0:
+            self.logger.debug('[cmmaxwarn]: You can\'t have negative max warnings.')
+            await self.bot.send_message(channel, 'You can\'t have negative max warnings.')
+        else:
+            self.maxWarnings = int(number)
+            await self.bot.modifySetting(server, self.tag, 'maxwarn', number)
 
-        return False
+            self.logger.debug('[cmmaxwarn]: Max Warnings have been set to: %s', str(number))
+            await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(number))
 
-    async def executeCommand(self, server, channel, author, command, parameters):
-        if command == '!showbanned':
-            if len(self.bannedWords) > 0:
-                words = ''
-                for word in self.bannedWords:
-                    words += word + '\n'
+    async def _setbanact_(self, server, channel, author, action):
+        if action == 'kick' or action == 'ban':
+            self.banAction = action 
+            await self.bot.modifySetting(server, self.tag, 'banact', action)
 
-                self.logger.debug('[!showbanned]: %s', words)
-                await self.bot.send_message(channel, words)
-            else:
-                await self.bot.send_message(channel, 'There are currently no banned words.')
-                self.logger.debug('[!showbanned]: There are currently no banned words.')
+            self.logger.debug('[cmbanact]: Ban Action has been set to: %s', action)
+            await self.bot.send_message(channel, 'Ban Action has been set to: ' + action)
+        else:
+            self.logger.debug('[cmbanact]: Invalid Ban Action. Please use \'kick\' or \'ban\'')
+            await self.bot.send_message(channel, 'Invalid Ban Action. Please use \'kick\' or \'ban\'')
 
-        elif command == '!cmsettings':
-            self.logger.debug('[!cmsettings]: Max Warnings: %s  Ban Action: %s', str(self.maxWarnings), self.banAction)
-            await self.bot.send_message(channel, 'Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
+    async def _status_(self, server, channel, author):
+        if author.name in self.userWarnings:
+            self.logger.debug('[cmstatus]: %s, you have %s warnings.', author, str(self.userWarnings[author.name]))
+            await self.bot.send_message(channel, '<@' + author.id + '>, you have ' + str(self.userWarnings[author.name]) + ' warnings.')
 
-        elif command == '!cmmaxwarn' and parameters != '':
-            if int(parameters) < 0:
-                self.logger.debug('[!cmmaxwarn]: You can\'t have negative max warnings.')
-                await self.bot.send_message(channel, 'You can\'t have negative max warnings.')
-            else:
-                firstWord = parameters.split(' ', 1)[0]
+        else:
+            self.logger.debug('[cmstatus]: %s, you have been given no warnings yet.', author)
+            await self.bot.send_message(channel, '<@' + author.id+ '>, you have been given no warnings yet.')
 
-                self.maxWarnings = int(firstWord)
-                await self.bot.modifySetting(server, self.tag, 'maxwarn', firstWord)
+    async def _ban_(self, server, channel, author, word):
+        firstWord = self.scrubMessage(word)
 
-                self.logger.debug('[!cmmaxwarn]: Max Warnings have been set to: %s', str(firstWord))
-                await self.bot.send_message(channel, 'Max Warnings have been set to: ' + str(firstWord))
+        if not firstWord in self.bannedWords:
+            self.bannedWords.append(firstWord)
+            await self.updateBannedWords(server)
 
-        elif command == '!cmbanact' and parameters != '':
-            firstWord = parameters.split(' ', 1)[0]
+            self.logger.debug('[!banword]: Banning word: %s', firstWord)
+            await self.bot.send_message(channel, 'Banning word: ' + firstWord)
+        
+    async def _unban_(self, server, channel, author, word):
+        firstWord = self.scrubMessage(word)
 
-            if firstWord == 'kick' or firstWord == 'ban':
-                self.banAction = firstWord
-                await self.bot.modifySetting(server, self.tag, 'banact', firstWord)
+        if firstWord in self.bannedWords:
+            self.bannedWords.remove(firstWord)
+            await self.updateBannedWords(server)
 
-                self.logger.debug('[!cmbanact]: Ban Action has been set to: %s', firstWord)
-                await self.bot.send_message(channel, 'Ban Action has been set to: ' + firstWord)
-            else:
-                self.logger.debug('[!cmbanact]: Invalid Ban Action. Please use \'kick\' or \'ban\'')
-                await self.bot.send_message(channel, 'Invalid Ban Action. Please use \'kick\' or \'ban\'')
+            self.logger.debug('[!unbanword]: Unbanning word: %s', firstWord)
+            await self.bot.send_message(channel, 'Unbanning word: ' + firstWord)
 
-        elif command == '!cmstatus':
-            if author.name in self.userWarnings:
-                self.logger.debug('[!cmstatus]: %s, you have %s warnings.', author, str(self.userWarnings[author.name]))
-                await self.bot.send_message(channel, '<@' + author.id + '>, you have ' + str(self.userWarnings[author.name]) + ' warnings.')
-
-            else:
-                self.logger.debug('[!cmstatus]: %s, you have been given no warnings yet.', author)
-                await self.bot.send_message(channel, '<@' + author.id+ '>, you have been given no warnings yet.')
-
-        elif command == '!banword' and parameters != '':
-            firstWord = parameters.split(' ', 1)[0]
-            firstWord = self.scrubMessage(firstWord)
-
-            if not firstWord in self.bannedWords:
-                self.bannedWords.append(firstWord)
-                await self.updateBannedWords(server)
-
-                self.logger.debug('[!banword]: Banning word: %s', firstWord)
-                await self.bot.send_message(channel, 'Banning word: ' + firstWord)
-                
-        elif command == '!unbanword' and parameters != '':
-            firstWord = parameters.split(' ', 1)[0]
-            firstWord = self.scrubMessage(firstWord)
-
-            if firstWord in self.bannedWords:
-                self.bannedWords.remove(firstWord)
-                await self.updateBannedWords(server)
-
-                self.logger.debug('[!unbanword]: Unbanning word: %s', firstWord)
-                await self.bot.send_message(channel, 'Unbanning word: ' + firstWord)
-
-            else:
-                self.logger.debug('[!unbanword]: This word is not banned.')
-                await self.bot.send_message(channel, 'This word is not banned.')
+        else:
+            self.logger.debug('[!unbanword]: This word is not banned.')
+            await self.bot.send_message(channel, 'This word is not banned.')
 
     async def updateBannedWords(self, server):
         await self.bot.modifySetting(server, self.tag, 'bannedWords', str(self.bannedWords))

@@ -7,14 +7,13 @@ import logging
 class Quotes(Plugin):
 
     async def initialize(self, bot):
-        self.bot = bot
-        self.commands = []
         self.channelName = 'quotes'
-        self.logger = logging.getLogger('styrobot.quotes')
         self.tag = 'quotes'
+        self.shortTag = 'q'
 
-        self.commands.append('!quote')
-        self.commands.append('!quotechannel')
+        self.commands.append('<quote><0><Say a random quote from the quotes channel>')
+        self.commands.append('<channel><0><Says which channel is being used for quotes>')
+        self.commands.append('<setchannel><1>(name)<Changes the channel to use for quotes to the channel called [name]>')
 
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
@@ -32,52 +31,38 @@ class Quotes(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
-                
-    def getCommands(self):
-        commands = []
+    async def _quote_(self, server, channel, author):
+        quotes = []
+        async for message in self.bot.logs_from(self.channel, limit=1000000):
+            quotes.append(message)
 
-        commands.append('**!quote**   - Say a random quote from the quotes channel')
-        commands.append('**!quotechannel <name>**   - Changes the channel to use for quotes to the channel called <name>')
+        if len(quotes) == 0:
+            self.logger.debug('[quote]: There are no quotes in the %s channel!', self.channelName)
+            await self.bot.send_message(channel, 'There are no quotes in the ' + self.channelName + ' channel!')
+            return
 
-        return commands
+        randQuote = quotes[random.randint(0, len(quotes) - 1)]
 
-    def checkForCommand(self, command):
-        for com in self.commands:
-            if com == command:
-                self.logger.debug('Command Found!')
-                return True
+        self.logger.debug('[quote]: %s', randQuote.content)
+        await self.bot.send_message(channel, randQuote.content)
 
-        return False
+    async def _channel_(self, server, channel, author):
+        self.logger.debug('[channel]: The current quote channel is: %s', self.channelName)
+        await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
-    async def executeCommand(self, server, channel, author, command, parameters):
-        if command == '!quote':
-            quotes = []
-            async for message in self.bot.logs_from(self.channel, limit=1000000):
-                quotes.append(message)
+    async def _setchannel_(self, server, channel, author, channame):
+        self.logger.debug('[setchannel]: Finding channel with name [%s]', channame)
+        newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
 
-            if len(quotes) == 0:
-                self.logger.debug('[!quote]: There are no quotes in the %s channel!', self.channelName)
-                await self.bot.send_message(channel, 'There are no quotes in the ' + self.channelName + ' channel!')
-                return
+        if newChan != None:
+            self.channel = newChan 
+            self.channelName = channame
 
-            randQuote = quotes[random.randint(0, len(quotes) - 1)]
+            await self.bot.modifySetting(server, self.tag, 'channame', channame)
 
-            self.logger.debug('[!quote]: %s', randQuote.content)
-            await self.bot.send_message(channel, randQuote.content)
+            self.logger.debug('[setchannel]: Quotes will now be taken from channel: %s', channame)
+            await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + channame)
 
-        elif command == '!quotechannel' and parameters != '':
-            firstWord = parameters.split(' ', 1)[0]
-
-            newChan = discord.utils.get(server.channels, name=firstWord, type=discord.ChannelType.text)
-
-            if newChan != None:
-                self.channel = newChan 
-
-                await self.bot.modifySetting(server, self.tag, 'channame', firstWord)
-
-                self.logger.debug('[!quotechannel]: Quotes will now be taken from channel: %s', firstWord)
-                await self.bot.send_message(channel, 'Quotes will now be taken from channel: ' + firstWord)
-
-            else:
-                self.logger.debug('[!quotechannel]: There is no channel with that name.')
-                await self.bot.send_message(channel, 'There is no channel with that name.')
+        else:
+            self.logger.debug('[setchannel]: There is no channel with that name.')
+            await self.bot.send_message(channel, 'There is no channel with that name.')
