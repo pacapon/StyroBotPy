@@ -20,6 +20,9 @@ echo "Complete!"
 echo "Installing Cleverbot"
 pip install cleverbot
 echo "Complete!"
+echo "Installing Youtube-dl"
+pip install youtube-dl 
+echo "Complete!"
 echo "Installing Pafy"
 pip install pafy
 echo "Complete!"
