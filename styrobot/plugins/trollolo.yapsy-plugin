@@ -1,0 +1,9 @@
+[Core]
+Name = Trollolo Plugin
+Module = trollolo 
+
+[Documentation]
+Description = A plugin for trolling people
+Author = Vincent
+Version = 1.0
+Website = None
