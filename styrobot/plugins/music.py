@@ -84,7 +84,6 @@ class Music(Plugin):
             return
 
         self.logger.debug('[stop]: Stopping song queue.')
-        await self.bot.send_message(channel, 'Stopping song queue.')
         await self.stop()
 
     async def _next_(self, server, channel, author, name):
@@ -221,8 +220,11 @@ class Music(Plugin):
     def is_playing(self):
         return self.player is not None and self.player.is_playing()
 
+    async def onLeaveVoiceChannel(self):
+        await self.stop()
+
     async def shutdown(self):
-        self.stop()
+        await self.stop()
         self.starter = None
         self.player = None
 

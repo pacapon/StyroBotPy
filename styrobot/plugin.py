@@ -124,5 +124,13 @@ class Plugin:
     # @param message  The message as given by discord. See discord documentation on the message class 
     async def readMessage(self, message): pass
 
+    # An event that is called when the bot joins a voice channel. Override if you need
+    # to handle something when this happens
+    async def onJoinVoiceChannel(self): pass
+
+    # An event that is called when the bot leaves a voice channel. Override if you need
+    # to handle something when this happens
+    async def onLeaveVoiceChannel(self): pass
+
     # Shutdowns the plugin
     async def shutdown(self): pass

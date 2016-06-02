@@ -297,11 +297,16 @@ class Bot(discord.Client):
 
             self.voiceChannel = await self.join_voice_channel(chan)
             self.voiceStarter = message.author
+
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                await plugin.plugin_object.onJoinVoiceChannel()
             return
         elif tag == 'leave':
             if message.author == self.voiceStarter or self.isAdmin(message.author):
-                self.logger.debug('[leave]: Leaving voice channel %s', self.voiceChannel.channel.name)
+                for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                    await plugin.plugin_object.onLeaveVoiceChannel()
 
+                self.logger.debug('[leave]: Leaving voice channel %s', self.voiceChannel.channel.name)
                 await self.voiceChannel.disconnect()
                 self.voiceChannel = None
                 self.voiceStarter = None
