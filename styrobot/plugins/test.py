@@ -8,7 +8,7 @@ class Test(Plugin):
 
     async def initialize(self, bot):
         self.channelName = 'quotes'
-        self.tag = 'quotes'
+        self.tag = 'test'
         self.shortTag = 'q'
 
         self.commands.append('<quote><0><Say a random quote from the quotes channel>')

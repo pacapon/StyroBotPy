@@ -59,6 +59,31 @@ class Bot(discord.Client):
             await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
 
+        self.collisions = {}
+
+        # Generate a dictionary of tags & commands that collide
+        for outer in self.pluginManager.getPluginsOfCategory("Plugins"):
+            for inner in self.pluginManager.getPluginsOfCategory("Plugins"):
+                if outer.name == inner.name:
+                    continue
+
+                # This should NEVER happen
+                if outer.plugin_object.tag == inner.plugin_object.tag:
+                    logger.error('Plugin Tag Collision! Tag: [%s]', outer.plugin_object.tag)
+
+                # Check their commands to see if there is collision as well
+                if outer.plugin_object.shortTag == inner.plugin_object.shortTag:
+                    logger.warning('Plugin Short Tag Collision! Short Tag: [%s]', outer.plugin_object.shortTag)
+
+                    for com in outer.plugin_object.parsedCommands:
+                        if com in inner.plugin_object.parsedCommands:
+                            logger.warning('Plugin Command Collision! Command: [%s]', com)
+
+                            if outer.plugin_object.shortTag not in self.collisions:
+                                self.collisions[outer.plugin_object.shortTag] = []
+
+                            self.collisions[outer.plugin_object.shortTag].append(com)
+
     async def shutdownPlugins(self):
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             await plugin.plugin_object.shutdown()
@@ -129,14 +154,21 @@ class Bot(discord.Client):
             if len(content) > 2:
                 args = content[2]
 
+
+        # Check for tag/command collisions here and resolve before letting the plugins handle it
+        for key, array in self.collisions.items():
+            for value in array:
+                if message.content.startswith('!' + key + ' ' + value):
+                    logger.debug('There is more than one plugin with this short tag and command combination. Please use the full tag.')
+                    await self.send_message(message.channel, 'There is more than one plugin with this short tag and command combination. Please use the full tag.')
+                    return
+
         found = False
         # Go through each of the plugins and see if they can execute the command
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Let the plugin read the message
             if plugin.plugin_object.isReadingMessages():
                 await plugin.plugin_object.readMessage(message)
-
-            # TODO: Check for tag/command collisions here and resolve before letting the plugins handle it
 
             # Check if a plugin can handle the command and execute it if they can
             if tag != '' and command != '': 
