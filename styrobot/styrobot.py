@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import discord
 from yapsy.PluginManager import PluginManager
+from random import shuffle
 from plugin import Plugin
 import logging
 
@@ -27,44 +28,51 @@ class Bot(discord.Client):
         # Create Plugin Manager
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
         self.pluginManager.setPluginPlaces(["plugins"])
+
     def getHelpBot(self):
         helpStr = '__**Basic Commands:**__\n'
         helpStr += '**!hello**   - Say Hello\n'
         helpStr += '**!f14**   - Create an F14!\n'
+        helpStr += '**!halp**   - Help has never been so unhelpful\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
         helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
         return helpStr
+
+    def getHelpHowTo(self):
+        helpStr = '__**How to use commands:**__\n'
+        helpStr += 'The command structure is like this: **!<tag> <command> <arguments>**\n\n'
+        helpStr += 'You must always start with an **!** and this is immediately followed with a **tag**. Each plugin has its own specific tag which you have to use to execute one of its commands.\n\n'
+        helpStr += 'Since these tags can get long and tedious, each plugin also has a **short tag**. You can use this instead of the full tag to reduce typing. If two plugins have the same short tag, you will have to use the full tag.\n\n'
+        helpStr += 'Plugins might also have commands. This is what follows the tag, separated with a space. See the help page for a Plugin to know what commands it has.\n\n'
+        helpStr += 'Some commands don\'t require any additional arguments, but others do. Add these as shown by the help page for a Plugin.\n\n'
+        helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just **!<command>**. These are unique to the bot itself and a plugin will never do this.\n\n'
+        helpStr += '**Example command 1:** !music play\n'
+        helpStr += '**Example command 2:** !m queue throughthefireandflames\n'
+        helpStr += '**Example command 3:** !hello'
+        return helpStr
+
+    def getHelpPluginTags(self):
+        helpStr = '__**Plugin Tags:**__\n'
+        helpStr += 'Use **!help <plugintag>** or **!help <pluginshorttag>** to see which commands a plugin has.\n'
+        helpStr += 'To see which commands the bot has, type **!help bot**\n' 
+        helpStr += 'To see all commands available, type **!help all**\n\n'
+
+        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Short Tag: **' + plugin.plugin_object.shortTag + '**\n'
+
+        return helpStr
         
     async def getHelp(self, channel, command):
         if command == '':
-            helpStr = '__**How to use commands:**__\n'
-            helpStr += 'The command structure is like this: **!<tag> <command> <arguments>**\n\n'
-            helpStr += 'You must always start with an **!** and this is immediately followed with a **tag**. Each plugin has its own specific tag which you have to use to execute one of its commands.\n\n'
-            helpStr += 'Since these tags can get long and tedious, each plugin also has a **short tag**. You can use this instead of the full tag to reduce typing. If two plugins have the same short tag, you will have to use the full tag.\n\n'
-            helpStr += 'Plugins might also have commands. This is what follows the tag, separated with a space. See the help page for a Plugin to know what commands it has.\n\n'
-            helpStr += 'Some commands don\'t require any additional arguments, but others do. Add these as shown by the help page for a Plugin.\n\n'
-            helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just **!<command>**. These are unique to the bot itself and a plugin will never do this.\n\n'
-            helpStr += '**Example command 1:** !music play\n'
-            helpStr += '**Example command 2:** !m queue throughthefireandflames\n'
-            helpStr += '**Example command 3:** !hello'
-            await self.send_message(channel, helpStr)
+            await self.send_message(channel, self.getHelpHowTo())
 
             await self.send_message(channel, self.getHelpBot())
 
-            helpStr = '__**Plugin Tags:**__\n'
-            helpStr += 'Use **!help <plugintag>** or **!help <pluginshorttag>** to see which commands a plugin has.\n'
-            helpStr += 'To see which commands the bot has, type **!help bot**\n' 
-            helpStr += 'To see all commands available, type **!help all**\n\n'
-
-            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-                helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Short Tag: **' + plugin.plugin_object.shortTag + '**\n'
-
-            await self.send_message(channel, helpStr)
+            await self.send_message(channel, self.getHelpPluginTags())
 
         elif command == 'all':
-            helpStr = self.getHelpBot()
-            await self.send_message(channel, helpStr)
+            await self.send_message(channel, self.getHelpBot())
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 helpStr = ''
@@ -102,6 +110,60 @@ class Bot(discord.Client):
                         helpStr += com + '\n'
 
                     await self.send_message(channel, helpStr)
+                    return
+
+    def _scramble(self, sentence):
+        split = sentence.split()
+        shuffle(split)
+        return ' '.join(split)
+
+    async def getHalp(self, channel, command):
+        if command == '':
+            await self.send_message(channel, self._scramble(self.getHelpHowTo()))
+
+            await self.send_message(channel, self._scramble(self.getHelpBot()))
+
+            await self.send_message(channel, self._scramble(self.getHelpPluginTags()))
+
+        elif command == 'all':
+            await self.send_message(channel, self._scramble(self.getHelpBot()))
+
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                helpStr = ''
+                commands = plugin.plugin_object.getCommands()
+
+                helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
+                helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
+                helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
+
+                for com in commands:
+                    helpStr += com + '\n'
+
+                await self.send_message(channel, self._scramble(helpStr))
+        elif command == 'bot':
+            await self.send_message(channel, self._scramble(self.getHelpBot()))
+
+        else:
+            # Check for short tag collision
+            if command in self.collisions:
+                logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
+                await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
+                return
+
+            # See if the command is the tag or short tag for a plugin
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                if command == plugin.plugin_object.tag or command == plugin.plugin_object.shortTag:
+                    helpStr = ''
+                    commands = plugin.plugin_object.getCommands()
+
+                    helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
+                    helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
+                    helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
+
+                    for com in commands:
+                        helpStr += com + '\n'
+
+                    await self.send_message(channel, self._scramble(helpStr))
                     return
 
     async def reloadPlugins(self):
@@ -154,7 +216,7 @@ class Bot(discord.Client):
         print('Plugins initialized!')
 
     def isBotCommand(self, tag):
-        if tag == 'help' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'reload':
+        if tag == 'help' or tag == 'halp' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'reload':
             return True
         
         return False
@@ -185,6 +247,9 @@ class Bot(discord.Client):
         # because we don't want plugins using these
         if tag == 'help':
             await self.getHelp(message.channel, command)
+            return
+        elif tag == 'halp':
+            await self.getHalp(message.channel, command)
             return
         elif tag == 'shutdown':
             for role in message.author.roles:
