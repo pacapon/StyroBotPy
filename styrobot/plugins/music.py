@@ -155,7 +155,9 @@ class Music(Plugin):
     async def stop(self):
         while not self.songs.empty():
             self.songs.get_nowait()
-        self.player.stop()
+
+        if self.player != None:
+            self.player.stop()
 
     async def play(self, channel):
         if self.player is not None and self.player.is_playing():

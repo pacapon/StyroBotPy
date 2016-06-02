@@ -287,14 +287,33 @@ class Bot(discord.Client):
             await self.edit_profile(password, username=newName)
             return
         elif tag == 'join':
-            check = lambda c: c.name == command and c.type == discord.ChannelType.voice
+            temp = []
+            chan = None
+            for channel in message.server.channels:
+                if channel.type == discord.ChannelType.voice:
+                    if channel.name.lower() == command.lower():
+                        temp.append(channel)
 
-            chan = discord.utils.find(check, message.server.channels)
-            if chan is None:
+            if len(temp) == 0:
                 self.logger.debug('[join]: Invalid channel name.')
-                await self.send_message(channel, 'Invalid channel name.')
+                await self.send_message(message.channel, 'Invalid channel name.')
                 return
+            elif len(temp) == 1:
+                chan = temp[0]
+            else:
+                self.logger.debug('[join]: More than one channel with name found. Picking the channel with the same capitalization.')
+                for channel in temp:
+                    if channel.name == command:
+                        chan = channel
+                        break
 
+                if chan == None:
+                    self.logger.debug('[join]: There is more than one channel with this name. Please use the correct capitalization to join a specific one.')
+                    await self.send_message(message.channel, 'There is more than one channel with this name. Please use the correct capitalization to join a specific one.')
+                    return
+
+
+            self.logger.debug('[join]: Joining channel %s', chan) 
             self.voiceChannel = await self.join_voice_channel(chan)
             self.voiceStarter = message.author
 
