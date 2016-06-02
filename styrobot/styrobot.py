@@ -27,28 +27,82 @@ class Bot(discord.Client):
         # Create Plugin Manager
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
         self.pluginManager.setPluginPlaces(["plugins"])
-        
-    async def getHelp(self, channel):
+    def getHelpBot(self):
         helpStr = '__**Basic Commands:**__\n'
         helpStr += '**!hello**   - Say Hello\n'
         helpStr += '**!f14**   - Create an F14!\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
         helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
-        await self.send_message(channel, helpStr)
+        return helpStr
+        
+    async def getHelp(self, channel, command):
+        if command == '':
+            helpStr = '__**How to use commands:**__\n'
+            helpStr += 'The command structure is like this: **!<tag> <command> <arguments>**\n\n'
+            helpStr += 'You must always start with an **!** and this is immediately followed with a **tag**. Each plugin has its own specific tag which you have to use to execute one of its commands.\n\n'
+            helpStr += 'Since these tags can get long and tedious, each plugin also has a **short tag**. You can use this instead of the full tag to reduce typing. If two plugins have the same short tag, you will have to use the full tag.\n\n'
+            helpStr += 'Plugins might also have commands. This is what follows the tag, separated with a space. See the help page for a Plugin to know what commands it has.\n\n'
+            helpStr += 'Some commands don\'t require any additional arguments, but others do. Add these as shown by the help page for a Plugin.\n\n'
+            helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just **!<command>**. These are unique to the bot itself and a plugin will never do this.\n\n'
+            helpStr += '**Example command 1:** !music play\n'
+            helpStr += '**Example command 2:** !m queue throughthefireandflames\n'
+            helpStr += '**Example command 3:** !hello'
+            await self.send_message(channel, helpStr)
 
-        for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            helpStr = ''
-            commands = plugin.plugin_object.getCommands()
+            await self.send_message(channel, self.getHelpBot())
 
-            helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
-            helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
-            helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
+            helpStr = '__**Plugin Tags:**__\n'
+            helpStr += 'Use **!help <plugintag>** or **!help <pluginshorttag>** to see which commands a plugin has.\n'
+            helpStr += 'To see which commands the bot has, type **!help bot**\n' 
+            helpStr += 'To see all commands available, type **!help all**\n\n'
 
-            for com in commands:
-                helpStr += com + '\n'
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Short Tag: **' + plugin.plugin_object.shortTag + '**\n'
 
             await self.send_message(channel, helpStr)
+
+        elif command == 'all':
+            helpStr = self.getHelpBot()
+            await self.send_message(channel, helpStr)
+
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                helpStr = ''
+                commands = plugin.plugin_object.getCommands()
+
+                helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
+                helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
+                helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
+
+                for com in commands:
+                    helpStr += com + '\n'
+
+                await self.send_message(channel, helpStr)
+        elif command == 'bot':
+            await self.send_message(channel, self.getHelpBot())
+
+        else:
+            # Check for short tag collision
+            if command in self.collisions:
+                logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
+                await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
+                return
+
+            # See if the command is the tag or short tag for a plugin
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                if command == plugin.plugin_object.tag or command == plugin.plugin_object.shortTag:
+                    helpStr = ''
+                    commands = plugin.plugin_object.getCommands()
+
+                    helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
+                    helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
+                    helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
+
+                    for com in commands:
+                        helpStr += com + '\n'
+
+                    await self.send_message(channel, helpStr)
+                    return
 
     async def reloadPlugins(self):
         # Load Plugins
@@ -99,41 +153,14 @@ class Bot(discord.Client):
         await self.reloadPlugins()
         print('Plugins initialized!')
 
+    def isBotCommand(self, tag):
+        if tag == 'help' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'reload':
+            return True
+        
+        return False
+ 
     async def on_message(self, message):
         if message.author == self.user:
-            return
-
-        # We do something special with basic built-in commands 
-        # because we don't want plugins using these
-        if (message.content.startswith('!help')):
-            await self.getHelp(message.channel)
-            return
-        elif message.content.startswith('!shutdown'):
-            for role in message.author.roles:
-                if role.permissions.administrator: # Change administrator if you want a different permission level to be able to do this
-
-                    # Call shutdown on our plugins
-                    await self.shutdownPlugins()
-
-                    await self.logout()
-                    return 
-
-            logger.debug('%s, You do not have permission to do that.', message.author)
-            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
-            return 
-        elif message.content.startswith('!hello'):
-            await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')
-            return
-        elif message.content.startswith('!f14'):
-            await self.send_file(message.channel, 'images/f14.jpg')
-            return
-        elif message.content.startswith('!changebotname'):
-            newName = message.content[14:].strip()
-            await self.edit_profile(password, username=newName)
-            return
-        elif message.content.startswith('!reload'):
-            logger.debug('Reloading plugins!')
-            await self.reloadPlugins()
             return
 
         tag = ''
@@ -147,13 +174,45 @@ class Bot(discord.Client):
 
             if len(content) > 1:
                 command = content[1]
-            else:
+            elif not self.isBotCommand(tag):
                 await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
                 return
 
             if len(content) > 2:
                 args = content[2]
 
+        # We do something special with basic built-in commands 
+        # because we don't want plugins using these
+        if tag == 'help':
+            await self.getHelp(message.channel, command)
+            return
+        elif tag == 'shutdown':
+            for role in message.author.roles:
+                if role.permissions.administrator: # Change administrator if you want a different permission level to be able to do this
+
+                    # Call shutdown on our plugins
+                    await self.shutdownPlugins()
+
+                    await self.logout()
+                    return 
+
+            logger.debug('%s, You do not have permission to do that.', message.author)
+            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
+            return 
+        elif tag =='hello':
+            await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')
+            return
+        elif tag == 'f14':
+            await self.send_file(message.channel, 'images/f14.jpg')
+            return
+        elif tag == 'changebotname':
+            newName = message.content[14:].strip()
+            await self.edit_profile(password, username=newName)
+            return
+        elif tag == 'reload':
+            logger.debug('Reloading plugins!')
+            await self.reloadPlugins()
+            return
 
         # Check for tag/command collisions here and resolve before letting the plugins handle it
         for key, array in self.collisions.items():
