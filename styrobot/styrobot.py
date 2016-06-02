@@ -28,25 +28,27 @@ class Bot(discord.Client):
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
         self.pluginManager.setPluginPlaces(["plugins"])
         
-    def getHelp(self):
+    async def getHelp(self, channel):
         helpStr = '__**Basic Commands:**__\n'
         helpStr += '**!hello**   - Say Hello\n'
         helpStr += '**!f14**   - Create an F14!\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
         helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
+        await self.send_message(channel, helpStr)
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            helpStr = ''
             commands = plugin.plugin_object.getCommands()
 
             helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
-            helpStr += 'Tag: ' + plugin.plugin_object.tag + '\n'
-            helpStr += 'ShortTag: ' + plugin.plugin_object.shortTag + '\n'
+            helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
+            helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
             for com in commands:
                 helpStr += com + '\n'
 
-        return helpStr
+            await self.send_message(channel, helpStr)
 
     async def reloadPlugins(self):
         # Load Plugins
@@ -79,7 +81,7 @@ class Bot(discord.Client):
         # We do something special with basic built-in commands 
         # because we don't want plugins using these
         if (message.content.startswith('!help')):
-            await self.send_message(message.channel, self.getHelp())
+            await self.getHelp(message.channel)
             return
         elif message.content.startswith('!shutdown'):
             for role in message.author.roles:

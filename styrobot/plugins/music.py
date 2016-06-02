@@ -21,6 +21,8 @@ class Music(Plugin):
         self.player = None
         self.currentSong = None
         self.voiceChannel = None
+        self.tag = 'music'
+        self.shortTag = 'm'
 
         self.commands.append('<join><1>(name)<Join voice channel with given name>')
         self.commands.append('<leave><0><Leave the current voice channel>')

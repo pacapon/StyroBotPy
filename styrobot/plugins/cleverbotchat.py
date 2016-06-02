@@ -5,7 +5,7 @@ import logging
 class CleverBotChat(Plugin):
     async def initialize(self, bot):
         self.cb = cleverbot.Cleverbot()
-        self.tag = 'cleverbotchat'
+        self.tag = 'cleverbot'
         self.shortTag = 'cb'
         
         self.commands.append('<chat><*>(text)<Sends a message to CleverBot>')
