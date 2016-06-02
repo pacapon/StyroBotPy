@@ -3,6 +3,7 @@ import os
 import pafy
 import asyncio
 import discord
+import styrobot
 import logging
 
 class Song:
@@ -20,42 +21,19 @@ class Music(Plugin):
         self.starter = None
         self.player = None
         self.currentSong = None
-        self.voiceChannel = None
         self.tag = 'music'
         self.shortTag = 'm'
 
-        self.commands.append('<join><1>(name)<Join voice channel with given name>')
-        self.commands.append('<leave><0><Leave the current voice channel>')
         self.commands.append('<play><0><Play the queued songs>')
         self.commands.append('<pause><0><Pause the currently playing song>')
         self.commands.append('<resume><0><Resume the currently paused song>')
         self.commands.append('<skip><0><Skip the currently playing song>')
+        self.commands.append('<stop><0><Stops the song queue completely. Requires admin permissions.')
         self.commands.append('<next><1>(name)<Queue the song called [name] to be played next>')
         self.commands.append('<add><2>(url, name)<Download song at [url] (must be youtube) for playback using [name]>')
         self.commands.append('<addnq<2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
         self.commands.append('<songlist><0><Display the list of available songs to play>')
         self.commands.append('<queue><0><Display the list of queued songs>')
-
-    async def _join_(self, server, channel, author, name):
-        check = lambda c: c.name == name and c.type == discord.ChannelType.voice
-
-        chan = discord.utils.find(check, server.channels)
-        if chan is None:
-            self.logger.debug('[join]: Invalid channel name.')
-            await self.bot.send_message(channel, 'Invalid channel name.')
-            return
-
-        self.voiceChannel = await self.bot.join_voice_channel(chan)
-        self.starter = author
-
-    async def _leave_(self, server, channel, author):
-        if not self.can_control_song(author):
-            return
-        self.starter = None
-
-        self.logger.debug('[leave]: Leaving voice channel %s', self.voiceChannel.channel.name)
-        await self.voiceChannel.disconnect()
-        self.voiceChannel = None
 
     async def _play_(self, server, channel, author):
         await self.play(channel)
@@ -63,8 +41,8 @@ class Music(Plugin):
 
     async def _pause_(self, server, channel, author):
         if not self.can_control_song(author):
-            fmt = 'Only the requester (<@{0.currentSong.requester.id}>) can control this song.'
-            logfmt = 'Only the requester ({0.currentSong.requester}) can control this song.'
+            fmt = 'Only the requester (<@{0.currentSong.requester.id}>) or an admin can control this song.'
+            logfmt = 'Only the requester ({0.currentSong.requester}) or an admin can control this song.'
 
             self.logger.debug('[pause]: %s', logfmt.format(self))
             await self.send_message(channel, fmt.format(self))
@@ -77,8 +55,8 @@ class Music(Plugin):
 
     async def _resume_(self, server, channel, author):
         if not self.can_control_song(author):
-            fmt = 'Only the requester (<@{0.currentSong.requester.id}>) can control this song.'
-            logfmt = 'Only the requester ({0.currentSong.requester}) can control this song.'
+            fmt = 'Only the requester (<@{0.currentSong.requester.id}>) or an admin can control this song.'
+            logfmt = 'Only the requester ({0.currentSong.requester}) or an admin can control this song.'
 
             self.logger.debug('[resume]: %s', fmt.format(self))
             await self.bot.send_message(channel, fmt.format(self))
@@ -98,6 +76,16 @@ class Music(Plugin):
         await self.skip(channel)
         await self.bot.send_message(channel, 'Skipping song.')
         self.logger.debug('[skip]: Skipping song.')
+
+    async def _stop_(self, server, channel, author):
+        if not self.bot.isAdmin(author):
+            self.logger.debug('[stop]: You must be an admin to do this.')
+            await self.bot.send_message(channel, 'You must be an admin to do this.')
+            return
+
+        self.logger.debug('[stop]: Stopping song queue.')
+        await self.bot.send_message(channel, 'Stopping song queue.')
+        await self.stop()
 
     async def _next_(self, server, channel, author, name):
         filename = 'music/' + name.strip() + '.mp3'
@@ -146,7 +134,7 @@ class Music(Plugin):
         filename = 'music/' + name + '.mp3'
 
         try:
-            self.dl_song(channel, url, name)
+            self.dl_song(url, name)
         except:
             self.logger.error('Failed to download song: %s', name)
             await self.bot.send_message(channel, 'Failed to download song: ' + name)
@@ -157,7 +145,7 @@ class Music(Plugin):
 
         return filename
 
-    def dl_song(self, channel, url, name):
+    def dl_song(self, url, name):
         video = pafy.new(url)
         audio = video.audiostreams
         songFile = audio[0].download(filepath="music/" + name + ".mp3")
@@ -166,6 +154,8 @@ class Music(Plugin):
         self.player.stop()
 
     async def stop(self):
+        while not self.songs.empty():
+            self.songs.get_nowait()
         self.player.stop()
 
     async def play(self, channel):
@@ -190,7 +180,7 @@ class Music(Plugin):
                 await self.bot.send_message(channel, 'Finished playing song queue.')
                 return
 
-            if self.voiceChannel is None:
+            if self.bot.voiceChannel is None:
                 self.logger.debug('Not connected to a channel.')
                 await self.bot.send_message(channel, 'Not connected to a channel.')
                 return
@@ -199,7 +189,7 @@ class Music(Plugin):
             self.currentSong = await self.songs.get()
             self.songNames.pop(0)
 
-            self.player = self.voiceChannel.create_ffmpeg_player(self.currentSong.song, after=self.toggle_next_song)
+            self.player = self.bot.voiceChannel.create_ffmpeg_player(self.currentSong.song, after=self.toggle_next_song)
             self.player.start()
             fmt = '<@{0.requester.id}> is now playing "{0.song}"'
             logfmt = '{0.requester} is now playing "{0.song}"'
@@ -226,14 +216,13 @@ class Music(Plugin):
         self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
     def can_control_song(self, author):
-        return author == self.starter or (self.currentSong is not None and author == self.currentSong.requester)
+        return author == self.starter or (self.currentSong is not None and author == self.currentSong.requester) or self.bot.isAdmin(author) 
 
     def is_playing(self):
         return self.player is not None and self.player.is_playing()
 
     async def shutdown(self):
+        self.stop()
         self.starter = None
         self.player = None
-        if self.voiceChannel != None:
-            await self.voiceChannel.disconnect()
 

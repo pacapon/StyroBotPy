@@ -15,6 +15,8 @@ class Bot(discord.Client):
         super().__init__()
 
         self.settingsChannelName = 'botsettings' # change this if you want your bot settings channel to have a different name
+        self.voiceChannel = None
+        self.voiceStarter = None
 
         # Setup logging for Discord.py
         self.discordLogger = logging.getLogger('discord')
@@ -29,12 +31,21 @@ class Bot(discord.Client):
         self.pluginManager = PluginManager(categories_filter={"Plugins": Plugin})
         self.pluginManager.setPluginPlaces(["plugins"])
 
+    def isAdmin(self, user):
+        for role in user.roles:
+            if role.permissions.administrator:
+                return True
+
+        return False
+
     def getHelpBot(self):
         helpStr = '__**Basic Commands:**__\n'
         helpStr += '**!hello**   - Say Hello\n'
         helpStr += '**!f14**   - Create an F14!\n'
         helpStr += '**!halp**   - Help has never been so unhelpful\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
+        helpStr += '**!join <name>**   - Join voice channel with given name\n'
+        helpStr += '**!leave**   - Leave the current voice channel\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
         helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
         return helpStr
@@ -205,6 +216,9 @@ class Bot(discord.Client):
             await plugin.plugin_object.shutdown()
             logger.debug('Shutdown %s', plugin.name)
 
+        if self.voiceChannel != None:
+            await self.voiceChannel.disconnect()
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
@@ -216,7 +230,7 @@ class Bot(discord.Client):
         print('Plugins initialized!')
 
     def isBotCommand(self, tag):
-        if tag == 'help' or tag == 'halp' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'reload':
+        if tag == 'help' or tag == 'halp' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'join' or tag == 'leave' or tag == 'reload':
             return True
         
         return False
@@ -252,14 +266,12 @@ class Bot(discord.Client):
             await self.getHalp(message.channel, command)
             return
         elif tag == 'shutdown':
-            for role in message.author.roles:
-                if role.permissions.administrator: # Change administrator if you want a different permission level to be able to do this
+            if self.isAdmin(message.author):
+                # Call shutdown on our plugins
+                await self.shutdownPlugins()
 
-                    # Call shutdown on our plugins
-                    await self.shutdownPlugins()
-
-                    await self.logout()
-                    return 
+                await self.logout()
+                return 
 
             logger.debug('%s, You do not have permission to do that.', message.author)
             await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
@@ -273,6 +285,30 @@ class Bot(discord.Client):
         elif tag == 'changebotname':
             newName = message.content[14:].strip()
             await self.edit_profile(password, username=newName)
+            return
+        elif tag == 'join':
+            check = lambda c: c.name == command and c.type == discord.ChannelType.voice
+
+            chan = discord.utils.find(check, message.server.channels)
+            if chan is None:
+                self.logger.debug('[join]: Invalid channel name.')
+                await self.send_message(channel, 'Invalid channel name.')
+                return
+
+            self.voiceChannel = await self.join_voice_channel(chan)
+            self.voiceStarter = message.author
+            return
+        elif tag == 'leave':
+            if message.author == self.voiceStarter or self.isAdmin(message.author):
+                self.logger.debug('[leave]: Leaving voice channel %s', self.voiceChannel.channel.name)
+
+                await self.voiceChannel.disconnect()
+                self.voiceChannel = None
+                self.voiceStarter = None
+                return
+
+            self.logger.debug('[leave]: You do not have permission to do that. You must be an admin or the person who did the join command.')
+            await self.send_message(message.channel, 'You do not have permission to do that. You must be an admin or the person who did the join command.')
             return
         elif tag == 'reload':
             logger.debug('Reloading plugins!')
