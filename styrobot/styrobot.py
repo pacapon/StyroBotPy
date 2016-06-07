@@ -76,6 +76,7 @@ class Bot(discord.Client):
         
     async def getHelp(self, channel, command):
         if command == '':
+            logger.debug('[help]: Getting basic help page.')
             await self.send_message(channel, self.getHelpHowTo())
 
             await self.send_message(channel, self.getHelpBot())
@@ -83,6 +84,7 @@ class Bot(discord.Client):
             await self.send_message(channel, self.getHelpPluginTags())
 
         elif command == 'all':
+            logger.debug('[help]: Getting all help pages.') 
             await self.send_message(channel, self.getHelpBot())
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -98,9 +100,11 @@ class Bot(discord.Client):
 
                 await self.send_message(channel, helpStr)
         elif command == 'bot':
+            logger.debug('[help]: Getting bot help page.')
             await self.send_message(channel, self.getHelpBot())
 
         else:
+            logger.debug('[help]: Finding plugin with tag/shortTag [%s]', command)
             # Check for short tag collision
             if command in self.collisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
@@ -120,6 +124,7 @@ class Bot(discord.Client):
                     for com in commands:
                         helpStr += com + '\n'
 
+                    logger.debug('[help]: Plugin found; getting help page.')
                     await self.send_message(channel, helpStr)
                     return
 
@@ -130,6 +135,7 @@ class Bot(discord.Client):
 
     async def getHalp(self, channel, command):
         if command == '':
+            logger.debug('[halp]: Getting basic halp page.')
             await self.send_message(channel, self._scramble(self.getHelpHowTo()))
 
             await self.send_message(channel, self._scramble(self.getHelpBot()))
@@ -137,6 +143,7 @@ class Bot(discord.Client):
             await self.send_message(channel, self._scramble(self.getHelpPluginTags()))
 
         elif command == 'all':
+            logger.debug('[halp]: Getting all halp pages.') 
             await self.send_message(channel, self._scramble(self.getHelpBot()))
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -152,9 +159,12 @@ class Bot(discord.Client):
 
                 await self.send_message(channel, self._scramble(helpStr))
         elif command == 'bot':
+            logger.debug('[halp]: Getting bot halp page.')
             await self.send_message(channel, self._scramble(self.getHelpBot()))
 
         else:
+            logger.debug('[halp]: Finding plugin with tag/shortTag [%s]', command)
+            # Check for short tag collision
             # Check for short tag collision
             if command in self.collisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
@@ -174,6 +184,7 @@ class Bot(discord.Client):
                     for com in commands:
                         helpStr += com + '\n'
 
+                    logger.debug('[halp]: Plugin found; getting halp page.')
                     await self.send_message(channel, self._scramble(helpStr))
                     return
 
@@ -266,6 +277,7 @@ class Bot(discord.Client):
             await self.getHalp(message.channel, command)
             return
         elif tag == 'shutdown':
+            logger.debug('[shutdown]: Executing command shutdown.')
             if self.isAdmin(message.author):
                 # Call shutdown on our plugins
                 await self.shutdownPlugins()
@@ -273,17 +285,20 @@ class Bot(discord.Client):
                 await self.logout()
                 return 
 
-            logger.debug('%s, You do not have permission to do that.', message.author)
+            logger.debug('[shutdown]: %s, You do not have permission to do that.', message.author)
             await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
             return 
         elif tag =='hello':
+            logger.debug('[hello]: Executing command hello.')
             await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')
             return
         elif tag == 'f14':
+            logger.debug('[f14]: Executing command f14.')
             await self.send_file(message.channel, 'images/f14.jpg')
             return
         elif tag == 'changebotname':
             newName = message.content[14:].strip()
+            logger.debug('[changebotname]: Executing command changebotname with args [%s].', newName)
             await self.edit_profile(password, username=newName)
             return
         elif tag == 'join':
@@ -335,7 +350,7 @@ class Bot(discord.Client):
             await self.send_message(message.channel, 'You do not have permission to do that. You must be an admin or the person who did the join command.')
             return
         elif tag == 'reload':
-            logger.debug('Reloading plugins!')
+            logger.debug('[reload]: Executing command reload')
             await self.reloadPlugins()
             return
 
