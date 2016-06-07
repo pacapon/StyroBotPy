@@ -3,7 +3,9 @@ import discord
 from yapsy.PluginManager import PluginManager
 from random import shuffle
 from plugin import Plugin
+import os
 import logging
+import urllib.request
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
@@ -17,6 +19,18 @@ class Bot(discord.Client):
         self.settingsChannelName = 'botsettings' # change this if you want your bot settings channel to have a different name
         self.voiceChannel = None
         self.voiceStarter = None
+
+        self.botCommands = []
+        self.botCommands.append('help')
+        self.botCommands.append('halp')
+        self.botCommands.append('shutdown')
+        self.botCommands.append('hello')
+        self.botCommands.append('f14')
+        self.botCommands.append('changebotname')
+        self.botCommands.append('changebotavatar')
+        self.botCommands.append('join')
+        self.botCommands.append('leave')
+        self.botCommands.append('reload')
 
         # Setup logging for Discord.py
         self.discordLogger = logging.getLogger('discord')
@@ -44,6 +58,7 @@ class Bot(discord.Client):
         helpStr += '**!f14**   - Create an F14!\n'
         helpStr += '**!halp**   - Help has never been so unhelpful\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
+        helpStr += '**!changebotavatar <image_url>**   - Change the bot\'s avatar image. Url must be an PNG or JPG image.' 
         helpStr += '**!join <name>**   - Join voice channel with given name\n'
         helpStr += '**!leave**   - Leave the current voice channel\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
@@ -241,7 +256,7 @@ class Bot(discord.Client):
         print('Plugins initialized!')
 
     def isBotCommand(self, tag):
-        if tag == 'help' or tag == 'halp' or tag == 'shutdown' or tag =='hello' or tag == 'f14' or tag == 'changebotname' or tag == 'join' or tag == 'leave' or tag == 'reload':
+        if tag in self.botCommands:
             return True
         
         return False
@@ -301,6 +316,40 @@ class Bot(discord.Client):
             logger.debug('[changebotname]: Executing command changebotname with args [%s].', newName)
 
             await self.change_nickname(message.server.me, newName)
+            return
+        elif tag == 'changebotavatar':
+            avatarUrl = message.content[17:]
+            extension = ''
+
+            if '.jpg' in avatarUrl.lower():
+                extension = '.jpg'
+            elif '.png' in avatarUrl.lower():
+                extension = '.png'
+            else:
+                logger.debug('[changebotavatar]: Url provided is either not an image or an unsupported format. Please make sure the image is a .png or .jpg')
+                await self.send_message(message.channel, 'Url provided is either not an image or an unsupported format. Please make sure the image is a .png or .jpg')
+                return
+
+            logger.debug('[changebotavatar]: Downloading image at url [%s]', avatarUrl)
+
+            if not self.download_image(avatarUrl, 'images/botavatar' + extension):
+                logger.debug('[changebotavatar]: Failed to download image.')
+                await self.send_message(message.channel, 'Failed to download image.')
+                return
+
+            file = open('images/botavatar' + extension, 'rb') 
+            bytes = file.read()
+
+            logger.debug('[changebotavatar]: Changing bot avatar.')
+            
+            if self.user.bot:
+                logger.debug('[changebotavatar]: User is a bot account.')
+                await self.edit_profile(None, avatar=bytes)
+            else:
+                await self.edit_profile(password, avatar=bytes)
+
+            logger.debug('[changebotavatar]: The Bot\'s Avatar has been updated.')
+            await self.send_message(message.channel, 'The Bot\'s Avatar has been updated.')
             return
         elif tag == 'join':
             temp = []
@@ -380,6 +429,29 @@ class Bot(discord.Client):
 
         if not found and message.content.startswith('!'):
             await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
+
+    def download_image(self, imgUrl, filename):
+        try:
+            logger.debug('[download_image]: Opening url') 
+            with urllib.request.urlopen(imgUrl) as imageOnWeb:
+                logger.debug('[download_image]: Checking if url is image')
+                if imageOnWeb.info()['Content-Type'].startswith('image'):
+                    logger.debug('[download_image]: Reading Image') 
+                    buf = imageOnWeb.read()
+                    logger.debug('[download_image]: Creating file [%s]', os.getcwd() + '/' + filename)
+                    downloadedImage = open(os.getcwd() + '/' + filename, 'wb')
+                    logger.debug('[download_image]: Writing Image') 
+                    downloadedImage.write(buf)
+                    downloadedImage.close()
+                    imageOnWeb.close()
+                else:
+                    logger.debug('[download_image]: Image URL is not an image')
+                    return False
+        except:
+            logger.debug('[download_image]: Something failed while reading or writing the image')
+            return False
+        logger.debug('[download_image]: Successfully downloaded image')
+        return True
 
     # Private helper for Settings API
     async def _createSettingsChannel(self, server):
