@@ -299,7 +299,8 @@ class Bot(discord.Client):
         elif tag == 'changebotname':
             newName = message.content[14:].strip()
             logger.debug('[changebotname]: Executing command changebotname with args [%s].', newName)
-            await self.edit_profile(password, username=newName)
+
+            await self.change_nickname(message.server.me, newName)
             return
         elif tag == 'join':
             temp = []
