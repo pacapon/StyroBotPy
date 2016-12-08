@@ -58,7 +58,7 @@ class Bot(discord.Client):
         helpStr += '**!f14**   - Create an F14!\n'
         helpStr += '**!halp**   - Help has never been so unhelpful\n'
         helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
-        helpStr += '**!changebotavatar <image_url>**   - Change the bot\'s avatar image. Url must be an PNG or JPG image.' 
+        helpStr += '**!changebotavatar <image_url>**   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n' 
         helpStr += '**!join <name>**   - Join voice channel with given name\n'
         helpStr += '**!leave**   - Leave the current voice channel\n'
         helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
