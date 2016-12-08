@@ -2,6 +2,11 @@ import abc
 import logging
 
 class Plugin:
+    # Command dictionary keys
+    NUM_PARAMS = 'numParams'
+    PARAM_NAMES = 'paramNames'
+    DESCRIPTION = 'description'
+
     __metaclass__ = abc.ABCMeta
 
     # Private initialize function
@@ -32,11 +37,11 @@ class Plugin:
         for key, value in self.parsedCommands.items():
             str = '**!{} {} '.format(self.tag, key)
         
-            if len(value['paramNames']) != 0:
-                for paramName in value['paramNames']:
+            if len(value[Plugin.PARAM_NAMES]) != 0:
+                for paramName in value[Plugin.PARAM_NAMES]:
                     str += '<{}> '.format(paramName)
 
-            str += '**  - {}'.format(value['description'])
+            str += '**  - {}'.format(value[Plugin.DESCRIPTION])
 
             commands.append(str)
 
@@ -57,9 +62,9 @@ class Plugin:
                 paramNames = temp2[1][1:-1].split(',')
 
             commands[name] = {}
-            commands[name]['numParams'] = numParams
-            commands[name]['paramNames'] = paramNames
-            commands[name]['description'] = description
+            commands[name][Plugin.NUM_PARAMS] = numParams
+            commands[name][Plugin.PARAM_NAMES] = paramNames
+            commands[name][Plugin.DESCRIPTION] = description
 
         return commands
 
@@ -74,7 +79,7 @@ class Plugin:
 
         for key, value in self.parsedCommands.items():
             if key == command:
-                if value['numParams'] == '*':
+                if value[Plugin.NUM_PARAMS] == '*':
                     temp = []
                     temp.append(args)
                     self.logger.debug('Command Found!')
@@ -82,7 +87,7 @@ class Plugin:
                     return temp
                 else:
                     temp = args.split(' ')
-                    num = int(value['numParams'])
+                    num = int(value[Plugin.NUM_PARAMS])
 
                     self.logger.debug('Command Found!')
 
@@ -103,7 +108,7 @@ class Plugin:
     # @param command     The command to execute
     # @param args        Any extra parameters that followed the command
     async def executeCommand(self, server, channel, author, command, args):
-        num = self.parsedCommands[command]['numParams']
+        num = self.parsedCommands[command][Plugin.NUM_PARAMS]
 
         if num != '*' and int(num) == 0:
             self.logger.debug('Executing command [%s]')
