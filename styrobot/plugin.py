@@ -11,7 +11,7 @@ class Plugin:
 
     # Private initialize function
     # DO NOT OVERRIDE OR CALL EXPLICITELY
-    async def _init(self, name, bot): 
+    async def _init(self, name, bot):
         self.bot = bot
         self.tag = name
         self.shortTag = name[0]
@@ -19,7 +19,7 @@ class Plugin:
         self.logger = logging.getLogger('styrobot.' + name)
 
         await self.initialize(bot)
-        
+
         self.parsedCommands = self._parseCommands()
 
     # Initializes the plugin
@@ -35,13 +35,13 @@ class Plugin:
         commands = []
 
         for key, value in self.parsedCommands.items():
-            str = '**!{} {} '.format(self.tag, key)
-        
+            str = '`!{} {} '.format(self.tag, key)
+
             if len(value[Plugin.PARAM_NAMES]) != 0:
                 for paramName in value[Plugin.PARAM_NAMES]:
                     str += '<{}> '.format(paramName)
 
-            str += '**  - {}'.format(value[Plugin.DESCRIPTION])
+            str += '`  - {}'.format(value[Plugin.DESCRIPTION])
 
             commands.append(str)
 
@@ -68,12 +68,12 @@ class Plugin:
 
         return commands
 
-    # Checks if this plugin handles the command provided by the user 
+    # Checks if this plugin handles the command provided by the user
     # @param tag      The tag which identifies the plugin (this could be their short tag)
     # @param command  The command the user wants to execute
     # @param args     The remaining text, which will be parsed into args for execution
     # @return         Returns False if it can't handle it. If it can, it returns the parsed args in an array
-    def checkForCommand(self, tag, command, args): 
+    def checkForCommand(self, tag, command, args):
         if tag != self.tag and tag != self.shortTag:
             return False
 
@@ -97,12 +97,12 @@ class Plugin:
                         self.logger.debug('Args: %s', temp)
                         return temp
                     else:
-                        self.logger.debug('Args: %s', temp[:len(temp)-num]) 
+                        self.logger.debug('Args: %s', temp[:len(temp)-num])
                         return temp[:len(temp)-num]
 
         return False
 
-    # Executes the chat command 
+    # Executes the chat command
     # @param channel     The discord channel this command was executed in
     # @param author      The user which executed this command
     # @param command     The command to execute
@@ -126,7 +126,7 @@ class Plugin:
 
     # Allows the plugin to read the full message and do whatever they want with it
     # It is not recommend to handle commands in this function.
-    # @param message  The message as given by discord. See discord documentation on the message class 
+    # @param message  The message as given by discord. See discord documentation on the message class
     async def readMessage(self, message): pass
 
     # An event that is called when the bot joins a voice channel. Override if you need

@@ -53,36 +53,36 @@ class Bot(discord.Client):
         return False
 
     def getHelpBot(self):
-        helpStr = '__**Basic Commands:**__\n'
-        helpStr += '**!hello**   - Say Hello\n'
-        helpStr += '**!f14**   - Create an F14!\n'
-        helpStr += '**!halp**   - Help has never been so unhelpful\n'
-        helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
-        helpStr += '**!changebotavatar <image_url>**   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n'
-        helpStr += '**!join <name>**   - Join voice channel with given name\n'
-        helpStr += '**!leave**   - Leave the current voice channel\n'
-        helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
-        helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
+        helpStr = '__**Basic Commands:**__\n\n'
+        helpStr += '`!hello`   - Say Hello\n'
+        helpStr += '`!f14`   - Create an F14!\n'
+        helpStr += '`!halp`   - Help has never been so unhelpful\n'
+        helpStr += '`!changebotname <name>`   - Change the name of the bot to <name>\n'
+        helpStr += '`!changebotavatar <image_url>`   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n'
+        helpStr += '`!join <name>`   - Join voice channel with given name\n'
+        helpStr += '`!leave`   - Leave the current voice channel\n'
+        helpStr += '`!shutdown`   - Shutdown the bot (requires server admin permissions)\n'
+        helpStr += '`!reload`   - Reloads the plugins dynamically at runtime\n'
         return helpStr
 
     def getHelpHowTo(self):
         helpStr = '__**How to use commands:**__\n'
-        helpStr += 'The command structure is like this: **!<tag> <command> <arguments>**\n\n'
+        helpStr += 'The command structure is like this: `!<tag> <command> <arguments>`\n\n'
         helpStr += 'You must always start with an **!** and this is immediately followed with a **tag**. Each plugin has its own specific tag which you have to use to execute one of its commands.\n\n'
         helpStr += 'Since these tags can get long and tedious, each plugin also has a **short tag**. You can use this instead of the full tag to reduce typing. If two plugins have the same short tag, you will have to use the full tag.\n\n'
         helpStr += 'Plugins might also have commands. This is what follows the tag, separated with a space. See the help page for a Plugin to know what commands it has.\n\n'
         helpStr += 'Some commands don\'t require any additional arguments, but others do. Add these as shown by the help page for a Plugin.\n\n'
-        helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just **!<command>**. These are unique to the bot itself and a plugin will never do this.\n\n'
-        helpStr += '**Example command 1:** !music play\n'
-        helpStr += '**Example command 2:** !m queue throughthefireandflames\n'
-        helpStr += '**Example command 3:** !hello'
+        helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just `!<command>`. These are unique to the bot itself and a plugin will never do this.\n\n'
+        helpStr += '**Example command 1:** `!music play`\n'
+        helpStr += '**Example command 2:** `!m queue throughthefireandflames`\n'
+        helpStr += '**Example command 3:** `!hello`'
         return helpStr
 
     def getHelpPluginTags(self):
-        helpStr = '__**Plugin Tags:**__\n'
-        helpStr += 'Use **!help <plugintag>** or **!help <pluginshorttag>** to see which commands a plugin has.\n'
-        helpStr += 'To see which commands the bot has, type **!help bot**\n'
-        helpStr += 'To see all commands available, type **!help all**\n\n'
+        helpStr = '__**Plugin Tags:**__\n\n'
+        helpStr += 'Use `!help <plugintag>` or `!help <pluginshorttag>` to see which commands a plugin has.\n'
+        helpStr += 'To see which commands the bot has, type `!help bot`\n'
+        helpStr += 'To see all commands available, type `!help all`\n\n'
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Short Tag: **' + plugin.plugin_object.shortTag + '**\n'
