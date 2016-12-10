@@ -6,6 +6,7 @@ from plugin import Plugin
 import os
 import logging
 import urllib.request
+import re
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
@@ -144,9 +145,27 @@ class Bot(discord.Client):
                     return
 
     def _scramble(self, sentence):
-        split = sentence.split()
-        shuffle(split)
-        return ' '.join(split)
+        words = sentence.split()
+
+        for i in range(len(words)):
+            m = re.search('([`_*~]+)(.+)([`_*~]+)', words[i])
+
+            if m:
+                prefix = m.group(1)
+                content = m.group(2)
+                suffix = m.group(3)
+
+                content = list(content)
+                shuffle(content)
+                content = ''.join(content)
+                words[i] = prefix + content + suffix
+
+            else:
+                words[i] = list(words[i])
+                shuffle(words[i])
+                words[i] = ''.join(words[i])
+
+        return ' '.join(words)
 
     async def getHalp(self, channel, command):
         if command == '':
