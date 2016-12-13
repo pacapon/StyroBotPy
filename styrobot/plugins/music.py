@@ -1,5 +1,6 @@
 from plugin import Plugin
 import os
+import shutil
 import pafy
 import asyncio
 import discord
@@ -33,6 +34,7 @@ class Music(Plugin):
         self.commands.append('<add><2>(url, name)<Download song at [url] (must be youtube) for playback using [name]>')
         self.commands.append('<addnq><2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
         self.commands.append('<delete><*>(names)<Delete song(s) [name] [name] [...]>')
+        self.commands.append('<deleteall><0><Delete all songs>')
         self.commands.append('<songlist><0><Display the list of available songs to play>')
         self.commands.append('<queue><0><Display the list of queued songs>')
 
@@ -118,6 +120,17 @@ class Music(Plugin):
                 await self.bot.send_message(channel, 'Unable to delete song ' + name)
             finally:
                 return
+
+        self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
+        await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
+
+    async def _deleteall_(self, server, channel, author):
+        if self.bot.isAdmin(author):
+            shutil.rmtree('music/')
+            os.mkdir('music/')
+            self.logger.debug('Deleting all songs from the music directory')
+            await self.bot.send_message(channel, 'Deleted all songs')
+            return
 
         self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
         await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
