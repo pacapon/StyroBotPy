@@ -32,6 +32,7 @@ class Music(Plugin):
         self.commands.append('<next><1>(name)<Queue the song called [name] to be played next>')
         self.commands.append('<add><2>(url, name)<Download song at [url] (must be youtube) for playback using [name]>')
         self.commands.append('<addnq><2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
+        self.commands.append('<delete><*>(names)<Delete song(s) [name] [name] [...]>')
         self.commands.append('<songlist><0><Display the list of available songs to play>')
         self.commands.append('<queue><0><Display the list of queued songs>')
 
@@ -103,6 +104,23 @@ class Music(Plugin):
             self.logger.debug('[addnq]: Queuing song [%s]', filename)
             await self.queue_song(author, channel, filename)
 
+    async def _delete_(self, server, channel, author, names):
+        if self.bot.isAdmin(author):
+            names = names.split()
+            try:
+                for name in names:
+                    filename = 'music/' + name + '.mp3'
+                    os.remove(filename)
+                    self.logger.debug('[delete]: Deleted %s', filename)
+                    await self.bot.send_message(channel, 'Song ' + name + ' deleted')
+            except OSError:
+                self.logger.debug('[delete]: File %s does not exist', filename)
+                await self.bot.send_message(channel, 'Unable to delete song ' + name)
+            finally:
+                return
+
+        self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
+        await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
 
     async def _songlist_(self, server, channel, author):
         songFiles = os.listdir('music/')
