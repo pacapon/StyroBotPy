@@ -112,9 +112,15 @@ class Bot(discord.Client):
                 helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                 for com in commands:
-                    helpStr += com + '\n'
+                    if len(helpStr) + len(com + '\n') < 2000:
+                        helpStr += com + '\n'
+                    else:
+                        await self.send_message(channel, helpStr)
+                        helpStr = '';
 
-                await self.send_message(channel, helpStr)
+                if helpStr:
+                    await self.send_message(channel, helpStr)
+
         elif command == 'bot':
             logger.debug('[help]: Getting bot help page.')
             await self.send_message(channel, self.getHelpBot())
@@ -138,10 +144,16 @@ class Bot(discord.Client):
                     helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                     for com in commands:
-                        helpStr += com + '\n'
+                        if len(helpStr) + len(com + '\n') < 2000:
+                            helpStr += com + '\n'
+                        else:
+                            await self.send_message(channel, helpStr)
+                            helpStr = '';
+
+                    if helpStr:
+                        await self.send_message(channel, helpStr)
 
                     logger.debug('[help]: Plugin found; getting help page.')
-                    await self.send_message(channel, helpStr)
                     return
 
     def _scramble(self, sentence):
@@ -189,9 +201,15 @@ class Bot(discord.Client):
                 helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                 for com in commands:
-                    helpStr += com + '\n'
+                    if len(helpStr) + len(com + '\n') < 2000:
+                        helpStr += com + '\n'
+                    else:
+                        await self.send_message(channel, self._scramble(helpStr))
+                        helpStr = '';
 
-                await self.send_message(channel, self._scramble(helpStr))
+                if helpStr:
+                    await self.send_message(channel, self._scramble(helpStr))
+
         elif command == 'bot':
             logger.debug('[halp]: Getting bot halp page.')
             await self.send_message(channel, self._scramble(self.getHelpBot()))
@@ -216,10 +234,16 @@ class Bot(discord.Client):
                     helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                     for com in commands:
-                        helpStr += com + '\n'
+                        if len(helpStr) + len(com + '\n') < 2000:
+                            helpStr += com + '\n'
+                        else:
+                            await self.send_message(channel, self._scramble(helpStr))
+                            helpStr = '';
+
+                    if helpStr:
+                        await self.send_message(channel, self._scramble(helpStr))
 
                     logger.debug('[halp]: Plugin found; getting halp page.')
-                    await self.send_message(channel, self._scramble(helpStr))
                     return
 
     async def reloadPlugins(self):
