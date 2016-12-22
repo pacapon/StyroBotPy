@@ -260,7 +260,9 @@ class Bot(discord.Client):
             logger.debug('%s Initialized!', plugin.name)
 
         self.commandCollisions = {}
+        self.getCommandCollisions()
 
+    def getCommandCollisions(self):
         # Generate a dictionary of tags & commands that collide
         for outer in self.pluginManager.getPluginsOfCategory("Plugins"):
             for inner in self.pluginManager.getPluginsOfCategory("Plugins"):
