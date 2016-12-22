@@ -4,6 +4,8 @@ from yapsy.PluginManager import PluginManager
 from random import shuffle
 from plugin import Plugin
 import os
+import glob
+import shutil
 import logging
 import urllib.request
 import re
@@ -29,6 +31,7 @@ class Bot(discord.Client):
         self.botCommands.append('f14')
         self.botCommands.append('changebotname')
         self.botCommands.append('changebotavatar')
+        self.botCommands.append('cleanassets')
         self.botCommands.append('join')
         self.botCommands.append('leave')
         self.botCommands.append('reload')
@@ -60,6 +63,7 @@ class Bot(discord.Client):
         helpStr += '`!halp`   - Help has never been so unhelpful\n'
         helpStr += '`!changebotname <name>`   - Change the name of the bot to <name>\n'
         helpStr += '`!changebotavatar <image_url>`   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n'
+        helpStr += '`!cleanassets`    - Clean image and music assets.\n'
         helpStr += '`!join <name>`   - Join voice channel with given name\n'
         helpStr += '`!leave`   - Leave the current voice channel\n'
         helpStr += '`!shutdown`   - Shutdown the bot (requires server admin permissions)\n'
@@ -393,6 +397,27 @@ class Bot(discord.Client):
 
             logger.debug('[changebotavatar]: The Bot\'s Avatar has been updated.')
             await self.send_message(message.channel, 'The Bot\'s Avatar has been updated.')
+            return
+        elif tag == 'cleanassets':
+            logger.debug('[cleanassets]: Cleaning assets.')
+            if self.isAdmin(message.author):
+                # clean music files
+                shutil.rmtree('music/')
+                os.mkdir('music/')
+                logger.debug('[cleanassets]: Cleaned music assets.')
+
+                # clean image files
+                for file in glob.glob('images/*'):
+                    if not file.endswith('f14.jpg'):
+                        os.remove(file)
+
+                logger.debug('[cleanassets]: Cleaned image assets.')
+
+                await self.send_message(message.channel, 'Cleaned music and image assets.')
+                return
+
+            logger.debug('[cleanassets]: %s, You do not have permission to do that.', message.author)
+            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
             return
         elif tag == 'join':
             temp = []
