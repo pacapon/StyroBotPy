@@ -128,7 +128,7 @@ class Bot(discord.Client):
         else:
             logger.debug('[help]: Finding plugin with tag/shortTag [%s]', command)
             # Check for short tag collision
-            if command in self.collisions:
+            if command in self.commandCollisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
                 await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
                 return
@@ -218,7 +218,7 @@ class Bot(discord.Client):
             logger.debug('[halp]: Finding plugin with tag/shortTag [%s]', command)
             # Check for short tag collision
             # Check for short tag collision
-            if command in self.collisions:
+            if command in self.commandCollisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
                 await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
                 return
@@ -255,7 +255,7 @@ class Bot(discord.Client):
             await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
 
-        self.collisions = {}
+        self.commandCollisions = {}
 
         # Generate a dictionary of tags & commands that collide
         for outer in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -275,10 +275,10 @@ class Bot(discord.Client):
                         if com in inner.plugin_object.parsedCommands:
                             logger.warning('Plugin Command Collision! Command: [%s]', com)
 
-                            if outer.plugin_object.shortTag not in self.collisions:
-                                self.collisions[outer.plugin_object.shortTag] = []
+                            if outer.plugin_object.shortTag not in self.commandCollisions:
+                                self.commandCollisions[outer.plugin_object.shortTag] = []
 
-                            self.collisions[outer.plugin_object.shortTag].append(com)
+                            self.commandCollisions[outer.plugin_object.shortTag].append(com)
 
     async def shutdownPlugins(self):
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -453,7 +453,7 @@ class Bot(discord.Client):
             return
 
         # Check for tag/command collisions here and resolve before letting the plugins handle it
-        for key, array in self.collisions.items():
+        for key, array in self.commandCollisions.items():
             for value in array:
                 if message.content.startswith('!' + key + ' ' + value):
                     logger.debug('There is more than one plugin with this short tag and command combination. Please use the full tag.')
