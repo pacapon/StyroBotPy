@@ -1,12 +1,9 @@
 import abc
 import logging
+import inspect
+from commands import CommandRegistry
 
 class Plugin:
-    # Command dictionary keys
-    NUM_PARAMS = 'numParams'
-    PARAM_NAMES = 'paramNames'
-    DESCRIPTION = 'description'
-
     __metaclass__ = abc.ABCMeta
 
     # Private initialize function
@@ -20,7 +17,9 @@ class Plugin:
 
         await self.initialize(bot)
         
-        self.parsedCommands = self._parseCommands()
+        #self.parsedCommands = self._parseCommands()
+        print('Plugin Class:', self.__class__.__name__)
+        print('Commands:', self.parsedCommands)
 
     # Initializes the plugin
     # @param bot  A reference to the bot's instance
@@ -37,11 +36,11 @@ class Plugin:
         for key, value in self.parsedCommands.items():
             str = '**!{} {} '.format(self.tag, key)
         
-            if len(value[Plugin.PARAM_NAMES]) != 0:
-                for paramName in value[Plugin.PARAM_NAMES]:
+            if len(value[CommandRegistry.PARAM_NAMES]) != 0:
+                for paramName in value[CommandRegistry.PARAM_NAMES]:
                     str += '<{}> '.format(paramName)
 
-            str += '**  - {}'.format(value[Plugin.DESCRIPTION])
+            str += '**  - {}'.format(value[CommandRegistry.DESCRIPTION])
 
             commands.append(str)
 
@@ -62,9 +61,9 @@ class Plugin:
                 paramNames = temp2[1][1:-1].split(',')
 
             commands[name] = {}
-            commands[name][Plugin.NUM_PARAMS] = numParams
-            commands[name][Plugin.PARAM_NAMES] = paramNames
-            commands[name][Plugin.DESCRIPTION] = description
+            commands[name][CommandRegistry.NUM_PARAMS] = numParams
+            commands[name][CommandRegistry.PARAM_NAMES] = paramNames
+            commands[name][CommandRegistry.DESCRIPTION] = description
 
         return commands
 
@@ -76,29 +75,26 @@ class Plugin:
     def checkForCommand(self, tag, command, args): 
         if tag != self.tag and tag != self.shortTag:
             return False
-
+    
         for key, value in self.parsedCommands.items():
             if key == command:
-                if value[Plugin.NUM_PARAMS] == '*':
-                    temp = []
-                    temp.append(args)
-                    self.logger.debug('Command Found!')
+                temp = value[CommandRegistry.PARAM_PARSER](args)
+                num = int(value[CommandRegistry.NUM_PARAMS])
+
+                self.logger.debug('Command Found!')
+
+                # Break out early if no params
+                if num == 0:
+                    return []
+
+                # For some reason doing array[:0] will still slice elements so we need to check
+                # for this edge case
+                if len(temp)-num == 0:
                     self.logger.debug('Args: %s', temp)
                     return temp
                 else:
-                    temp = args.split(' ')
-                    num = int(value[Plugin.NUM_PARAMS])
-
-                    self.logger.debug('Command Found!')
-
-                    # For some reason doing array[:0] will still slice elements so we need to check
-                    # for this edge case
-                    if len(temp)-num == 0:
-                        self.logger.debug('Args: %s', temp)
-                        return temp
-                    else:
-                        self.logger.debug('Args: %s', temp[:len(temp)-num]) 
-                        return temp[:len(temp)-num]
+                    self.logger.debug('Args: %s', temp[:len(temp)-num]) 
+                    return temp[:len(temp)-num]
 
         return False
 
@@ -107,16 +103,20 @@ class Plugin:
     # @param author      The user which executed this command
     # @param command     The command to execute
     # @param args        Any extra parameters that followed the command
-    async def executeCommand(self, server, channel, author, command, args):
-        num = self.parsedCommands[command][Plugin.NUM_PARAMS]
+    async def executeCommand(self, args, **kwargs):
+        command = kwargs.pop('command')
+        num = self.parsedCommands[command][CommandRegistry.NUM_PARAMS]
+        paramNames = self.parsedCommands[command][CommandRegistry.PARAM_NAMES]
+        funcName = self.parsedCommands[command][CommandRegistry.FUNCTION_NAME]
 
-        if num != '*' and int(num) == 0:
-            self.logger.debug('Executing command [%s]')
-            await getattr(self, '_' + command + '_')(server, channel, author)
-        else:
-            self.logger.debug('Executing command [%s] with arguments [%s]', command, str(args)[1:-1])
-            await getattr(self, '_' + command + '_')(server, channel, author, *args)
+        if len(args) != len(paramNames):
+            self.logger.error('The number of arguments (%s) and the number of parameter names (%s) does not match!', len(args), len(paramNames))
 
+        for i, name in enumerate(paramNames):
+            kwargs[name] = args[i]
+
+        self.logger.debug('Executing command [%s] with arguments [%s]', command, str(args)[1:-1])
+        await getattr(self, funcName)(**kwargs)
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something
@@ -139,3 +139,4 @@ class Plugin:
 
     # Shutdowns the plugin
     async def shutdown(self): pass
+

@@ -3,6 +3,8 @@ import discord
 import styrobot
 import random
 import logging
+import inspect
+import commands
 
 class Test(Plugin):
 
@@ -16,6 +18,7 @@ class Test(Plugin):
         self.commands.append('<setchannel><1>(name)<Changes the channel to use for quotes to the channel called [name]>')
         self.commands.append('<add><*>(text)<Adds the text as a quote>')
         self.commands.append('<create><2>(quote,quoter)<Creates a quote>')
+        self.commands.append('<blah><0><Blah blah blah>')
 
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
@@ -33,7 +36,10 @@ class Test(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
-    async def _quote_(self, server, channel, author):
+    @styrobot.plugincommand('Test Description', name='quote', parserType=commands.ParamParserType.ALL)
+    async def _quote_(self, server, channel, author, **kwargs):
+        #print('Description:', Plugin.commandMetadata['Test._quote_']['_description'])
+        print('Server: {}  Channel: {}  Author: {}'.format(server, channel, author))
         quotes = []
         async for message in self.bot.logs_from(self.channel, limit=1000000):
             quotes.append(message)
@@ -74,3 +80,8 @@ class Test(Plugin):
 
     async def _create_(self, server, channel, author, quote, quoter):
         print('[create]: ', quote, ' - ', quoter)
+        print('Server: {}  Channel: {}  Author: {}  Quote: {}  Quoter: {}'.format(server, channel, author, quote, quoter))
+
+    async def _blah_(self, **kwargs):
+        print('IT WORKED')
+        print('Server: {}  Channel: {}  Author: {}'.format(kwargs['server'], kwargs['channel'], kwargs['author']))

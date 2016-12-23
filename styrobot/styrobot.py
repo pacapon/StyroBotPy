@@ -6,13 +6,26 @@ from plugin import Plugin
 import os
 import logging
 import urllib.request
+import inspect
+import commands
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
 
-client = discord.Client()
+commandRegistry = {}
+# Reference for auto registering decorated functions for a class
+# http://stackoverflow.com/questions/3054372/auto-register-class-methods-using-decorator
+# I should explore this and see if I can use it
+
+# Reference for auto registering decorated functions
+# http://stackoverflow.com/questions/5707589/calling-functions-by-array-index-in-python/5707605#5707605
+
+# Plugin Command dictionary and decorator
+plugincommand = commands._loadCommands()
+#plugincommand.registry = commandRegistry
 
 class Bot(discord.Client):
+
     def __init__(self):
         super().__init__()
 
@@ -208,7 +221,15 @@ class Bot(discord.Client):
         self.pluginManager.locatePlugins()
         self.pluginManager.loadPlugins()
 
+        print('Registry', plugincommand.registry)
+
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+            # Give the plugin it's dictionary of commands (so it doesn't need to lookup later)
+            if plugin.plugin_object.__class__.__name__ in plugincommand.registry:
+                plugin.plugin_object.parsedCommands = plugincommand.registry[plugin.plugin_object.__class__.__name__]
+            else:
+                plugin.plugin_object.parsedCommands = {}
+
             await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
 
@@ -424,7 +445,7 @@ class Bot(discord.Client):
                 temp = plugin.plugin_object.checkForCommand(tag, command, args)
 
                 if temp != False:
-                    await plugin.plugin_object.executeCommand(message.server, message.channel, message.author, command, temp)
+                    await plugin.plugin_object.executeCommand(temp, command=command, server=message.server, channel=message.channel, author=message.author) 
                     found = True
 
         if not found and message.content.startswith('!'):
@@ -613,8 +634,9 @@ class Bot(discord.Client):
         logger.debug('The bot is not part of server %s!', server)
         return False
 
-  
 if __name__ == "__main__":
+
+    client = discord.Client()
 
     # Setup logging for the bot
     logger = logging.getLogger('styrobot')
@@ -623,11 +645,11 @@ if __name__ == "__main__":
     handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s'))
     logger.addHandler(handler)
 
-    styroBot = Bot()
+    styrobot = Bot()
     f = open('credentials.txt', 'r')
     creds = f.read().splitlines()
     email = creds[0]
     password = creds[1]
     f.close()
-    #styroBot.run(email, password)
-    styroBot.run(password)
+    #styrobot.run(email, password)
+    styrobot.run(password)
