@@ -1,7 +1,7 @@
 import abc
 import logging
 import inspect
-from commands import CommandRegistry
+from commands import CommandRegistry, ParamParserType
 
 class Plugin:
     __metaclass__ = abc.ABCMeta
@@ -17,7 +17,6 @@ class Plugin:
 
         await self.initialize(bot)
         
-        #self.parsedCommands = self._parseCommands()
         print('Plugin Class:', self.__class__.__name__)
         print('Commands:', self.parsedCommands)
 
@@ -46,27 +45,6 @@ class Plugin:
 
         return commands
 
-    # Private helper function to parse the commands array and produce a dictionary
-    # which contains all the information for each command
-    def _parseCommands(self):
-        commands = {}
-        for com in self.commands:
-            temp = com.split('<')
-            temp2 = temp[2].split('>')
-            name = temp[1][:-1]
-            description = temp[3][:-1]
-            numParams = temp2[0]
-            paramNames = []
-            if (len(temp2) > 1 and ((numParams != '*' and int(numParams) != 0) or numParams == '*')):
-                paramNames = temp2[1][1:-1].split(',')
-
-            commands[name] = {}
-            commands[name][CommandRegistry.NUM_PARAMS] = numParams
-            commands[name][CommandRegistry.PARAM_NAMES] = paramNames
-            commands[name][CommandRegistry.DESCRIPTION] = description
-
-        return commands
-
     # Checks if this plugin handles the command provided by the user 
     # @param tag      The tag which identifies the plugin (this could be their short tag)
     # @param command  The command the user wants to execute
@@ -80,21 +58,23 @@ class Plugin:
             if key == command:
                 temp = value[CommandRegistry.PARAM_PARSER](args)
                 num = int(value[CommandRegistry.NUM_PARAMS])
+                parserType = value[CommandRegistry.PARAM_PARSER_TYPE]
 
                 self.logger.debug('Command Found!')
+                self.logger.debug('ParserType: %s', parserType)
 
                 # Break out early if no params
                 if num == 0:
+                    self.logger.debug('Args: []')
                     return []
 
-                # For some reason doing array[:0] will still slice elements so we need to check
-                # for this edge case
-                if len(temp)-num == 0:
-                    self.logger.debug('Args: %s', temp)
-                    return temp
-                else:
-                    self.logger.debug('Args: %s', temp[:len(temp)-num]) 
-                    return temp[:len(temp)-num]
+                # Break out early if we want all the arguments as a parameter
+                if parserType == ParamParserType.ALL:
+                    self.logger.debug('Args: [%s]', temp)
+                    return [temp]
+
+                self.logger.debug('Args: %s', temp[:num])
+                return temp[:num]
 
         return False
 

@@ -13,13 +13,6 @@ class Test(Plugin):
         self.tag = 'test'
         self.shortTag = 'q'
 
-        self.commands.append('<quote><0><Say a random quote from the quotes channel>')
-        self.commands.append('<channel><0><Says which channel is being used for quotes>')
-        self.commands.append('<setchannel><1>(name)<Changes the channel to use for quotes to the channel called [name]>')
-        self.commands.append('<add><*>(text)<Adds the text as a quote>')
-        self.commands.append('<create><2>(quote,quoter)<Creates a quote>')
-        self.commands.append('<blah><0><Blah blah blah>')
-
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
@@ -36,7 +29,7 @@ class Test(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
-    @styrobot.plugincommand('Test Description', name='quote', parserType=commands.ParamParserType.ALL)
+    @styrobot.plugincommand('Say a random quote from the quotes channel', name='quote')
     async def _quote_(self, server, channel, author, **kwargs):
         #print('Description:', Plugin.commandMetadata['Test._quote_']['_description'])
         print('Server: {}  Channel: {}  Author: {}'.format(server, channel, author))
@@ -54,10 +47,12 @@ class Test(Plugin):
         self.logger.debug('[quote]: %s', randQuote.content)
         await self.bot.send_message(channel, randQuote.content)
 
+    @styrobot.plugincommand('Says which channel is being used for quotes', name='channel')
     async def _channel_(self, server, channel, author):
         self.logger.debug('[channel]: The current quote channel is: %s', self.channelName)
         await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
+    @styrobot.plugincommand('Changes the channel to use for quotes to the channel called [name]', name='setchannel')
     async def _setchannel_(self, server, channel, author, channame):
         self.logger.debug('[setchannel]: Finding channel with name [%s]', channame)
         newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
@@ -75,13 +70,16 @@ class Test(Plugin):
             self.logger.debug('[setchannel]: There is no channel with that name.')
             await self.bot.send_message(channel, 'There is no channel with that name.')
 
+    @styrobot.plugincommand('Adds the text as a quote', name='add', parserType=commands.ParamParserType.ALL)
     async def _add_(self, server, channel, author, text):
         print('[add]: ', text)
 
+    @styrobot.plugincommand('Creates a quote', name='create', parserType=commands.ParamParserType.CUSTOM, parser=lambda args: args.split('-'))
     async def _create_(self, server, channel, author, quote, quoter):
         print('[create]: ', quote, ' - ', quoter)
         print('Server: {}  Channel: {}  Author: {}  Quote: {}  Quoter: {}'.format(server, channel, author, quote, quoter))
 
-    async def _blah_(self, **kwargs):
-        print('IT WORKED')
+    @styrobot.plugincommand('Blah blah blah', name='blah')
+    async def _blah_(self, beep, boop, bop, **kwargs):
+        print('Beep:', beep, 'Boop:', boop, 'Bop:', bop)
         print('Server: {}  Channel: {}  Author: {}'.format(kwargs['server'], kwargs['channel'], kwargs['author']))
