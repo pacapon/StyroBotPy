@@ -52,7 +52,7 @@ class Test(Plugin):
         self.logger.debug('[channel]: The current quote channel is: %s', self.channelName)
         await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
-    @styrobot.plugincommand('Changes the channel to use for quotes to the channel called [name]', name='setchannel')
+    @styrobot.plugincommand('Changes the channel to use for quotes to the channel called <name>', name='setchannel')
     async def _setchannel_(self, server, channel, author, channame):
         self.logger.debug('[setchannel]: Finding channel with name [%s]', channame)
         newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
