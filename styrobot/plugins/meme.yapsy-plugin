@@ -1,0 +1,9 @@
+[Core]
+Name = Meme Plugin
+Module = meme
+
+[Documentation]
+Description = A plugin for displaying meme images
+Author = Eric
+Version = 1.0
+Website = None

@@ -14,7 +14,7 @@ class ChatMod(Plugin):
 
         # What action to take on a user after they've maxed out their warnings
         # Options are: kick and ban
-        self.banAction = 'kick' 
+        self.banAction = 'kick'
 
         self.commands.append('<showbanned><0><Shows the list of banned words>')
         self.commands.append('<settings><0><Show the current settings for the chat mod plugin>')
@@ -40,10 +40,13 @@ class ChatMod(Plugin):
                 await self.bot.modifySetting(server, self.tag, 'banact', self.banAction)
 
             if 'bannedWords' in settings:
-                words = settings['bannedWords'][1:-1].split(', ')
+                words = settings['bannedWords'][1:-1]
 
-                for word in words:
-                    self.bannedWords.append(word[1:-1])
+                if words:
+                    words = words.split(', ')
+
+                    for word in words:
+                        self.bannedWords.append(word[1:-1])
             else:
                 await self.bot.modifySetting(server, self.tag, 'bannedWords', '')
 
@@ -76,7 +79,7 @@ class ChatMod(Plugin):
 
     async def _setbanact_(self, server, channel, author, action):
         if action == 'kick' or action == 'ban':
-            self.banAction = action 
+            self.banAction = action
             await self.bot.modifySetting(server, self.tag, 'banact', action)
 
             self.logger.debug('[cmbanact]: Ban Action has been set to: %s', action)
@@ -97,13 +100,18 @@ class ChatMod(Plugin):
     async def _ban_(self, server, channel, author, word):
         firstWord = self.scrubMessage(word)
 
+        if not firstWord:
+            self.logger.debug('[!banword]: Cannot ban an empty string')
+            await self.bot.send_message(channel, 'You must specify a word to ban!')
+            return
+
         if not firstWord in self.bannedWords:
             self.bannedWords.append(firstWord)
             await self.updateBannedWords(server)
 
             self.logger.debug('[!banword]: Banning word: %s', firstWord)
             await self.bot.send_message(channel, 'Banning word: ' + firstWord)
-        
+
     async def _unban_(self, server, channel, author, word):
         firstWord = self.scrubMessage(word)
 
@@ -128,9 +136,11 @@ class ChatMod(Plugin):
         self.logger.debug('Reading message!')
         scrubbed = self.scrubMessage(message.content)
 
-        for word in self.bannedWords:
-            if word in scrubbed: 
+        if not self.bannedWords:
+            return
 
+        for word in self.bannedWords:
+            if word in scrubbed:
                 # TODO: improve this so people can't just bypass the moderating
                 if message.content.startswith('!'):
                     return
@@ -140,7 +150,7 @@ class ChatMod(Plugin):
 
                     if self.userWarnings[message.author.name] > int(self.maxWarnings):
                         await self.applyAction(message.author, message.channel)
-                        
+
                     elif self.userWarnings[message.author.name] == int(self.maxWarnings):
                         await self.bot.send_message(message.channel, 'Watch your language, <@' + message.author.id + '>. This is your final warning.')
                         self.logger.debug('%s has used the banned word: %s', message.author, word)
@@ -165,12 +175,12 @@ class ChatMod(Plugin):
     async def applyAction(self, user, channel):
         if self.banAction == 'kick':
             self.logger.debug('Kicking %s for bad language.', user.name)
-            await self.bot.send_message(channel, 'Kicking <@' + user.id + '> for bad language.') 
+            await self.bot.send_message(channel, 'Kicking <@' + user.id + '> for bad language.')
 
             await self.bot.kick(user)
 
         elif self.banAction == 'ban':
             self.logger.debug('Banning %s for bad language.', user.name)
-            await self.bot.send_message(channel, 'Banning <@' + user.id + '> for bad language.') 
+            await self.bot.send_message(channel, 'Banning <@' + user.id + '> for bad language.')
 
             await self.bot.ban(user)

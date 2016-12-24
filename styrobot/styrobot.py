@@ -4,15 +4,17 @@ from yapsy.PluginManager import PluginManager
 from random import shuffle
 from plugin import Plugin
 import os
+import glob
+import shutil
 import logging
 import urllib.request
 import inspect
 import commands
+import re
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
 
-commandRegistry = {}
 # Reference for auto registering decorated functions for a class
 # http://stackoverflow.com/questions/3054372/auto-register-class-methods-using-decorator
 # I should explore this and see if I can use it
@@ -22,7 +24,6 @@ commandRegistry = {}
 
 # Plugin Command dictionary and decorator
 plugincommand = commands._loadCommands()
-#plugincommand.registry = commandRegistry
 
 class Bot(discord.Client):
 
@@ -41,6 +42,7 @@ class Bot(discord.Client):
         self.botCommands.append('f14')
         self.botCommands.append('changebotname')
         self.botCommands.append('changebotavatar')
+        self.botCommands.append('cleanassets')
         self.botCommands.append('join')
         self.botCommands.append('leave')
         self.botCommands.append('reload')
@@ -66,42 +68,43 @@ class Bot(discord.Client):
         return False
 
     def getHelpBot(self):
-        helpStr = '__**Basic Commands:**__\n'
-        helpStr += '**!hello**   - Say Hello\n'
-        helpStr += '**!f14**   - Create an F14!\n'
-        helpStr += '**!halp**   - Help has never been so unhelpful\n'
-        helpStr += '**!changebotname <name>**   - Change the name of the bot to <name>\n'
-        helpStr += '**!changebotavatar <image_url>**   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n' 
-        helpStr += '**!join <name>**   - Join voice channel with given name\n'
-        helpStr += '**!leave**   - Leave the current voice channel\n'
-        helpStr += '**!shutdown**   - Shutdown the bot (requires server admin permissions)\n'
-        helpStr += '**!reload**   - Reloads the plugins dynamically at runtime\n'
+        helpStr = '__**Basic Commands:**__\n\n'
+        helpStr += '`!hello`   - Say Hello\n'
+        helpStr += '`!f14`   - Create an F14!\n'
+        helpStr += '`!halp`   - Help has never been so unhelpful\n'
+        helpStr += '`!changebotname <name>`   - Change the name of the bot to <name>\n'
+        helpStr += '`!changebotavatar <image_url>`   - Change the bot\'s avatar image. Url must be an PNG or JPG image.\n'
+        helpStr += '`!cleanassets`    - Clean image and music assets.\n'
+        helpStr += '`!join <name>`   - Join voice channel with given name\n'
+        helpStr += '`!leave`   - Leave the current voice channel\n'
+        helpStr += '`!shutdown`   - Shutdown the bot (requires server admin permissions)\n'
+        helpStr += '`!reload`   - Reloads the plugins dynamically at runtime\n'
         return helpStr
 
     def getHelpHowTo(self):
         helpStr = '__**How to use commands:**__\n'
-        helpStr += 'The command structure is like this: **!<tag> <command> <arguments>**\n\n'
+        helpStr += 'The command structure is like this: `!<tag> <command> <arguments>`\n\n'
         helpStr += 'You must always start with an **!** and this is immediately followed with a **tag**. Each plugin has its own specific tag which you have to use to execute one of its commands.\n\n'
         helpStr += 'Since these tags can get long and tedious, each plugin also has a **short tag**. You can use this instead of the full tag to reduce typing. If two plugins have the same short tag, you will have to use the full tag.\n\n'
         helpStr += 'Plugins might also have commands. This is what follows the tag, separated with a space. See the help page for a Plugin to know what commands it has.\n\n'
         helpStr += 'Some commands don\'t require any additional arguments, but others do. Add these as shown by the help page for a Plugin.\n\n'
-        helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just **!<command>**. These are unique to the bot itself and a plugin will never do this.\n\n'
-        helpStr += '**Example command 1:** !music play\n'
-        helpStr += '**Example command 2:** !m queue throughthefireandflames\n'
-        helpStr += '**Example command 3:** !hello'
+        helpStr += 'The bot also has special commands which don\'t follow the command structure. They are just `!<command>`. These are unique to the bot itself and a plugin will never do this.\n\n'
+        helpStr += '**Example command 1:** `!music play`\n'
+        helpStr += '**Example command 2:** `!m queue throughthefireandflames`\n'
+        helpStr += '**Example command 3:** `!hello`'
         return helpStr
 
     def getHelpPluginTags(self):
-        helpStr = '__**Plugin Tags:**__\n'
-        helpStr += 'Use **!help <plugintag>** or **!help <pluginshorttag>** to see which commands a plugin has.\n'
-        helpStr += 'To see which commands the bot has, type **!help bot**\n' 
-        helpStr += 'To see all commands available, type **!help all**\n\n'
+        helpStr = '__**Plugin Tags:**__\n\n'
+        helpStr += 'Use `!help <plugintag>` or `!help <pluginshorttag>` to see which commands a plugin has.\n'
+        helpStr += 'To see which commands the bot has, type `!help bot`\n'
+        helpStr += 'To see all commands available, type `!help all`\n\n'
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Short Tag: **' + plugin.plugin_object.shortTag + '**\n'
 
         return helpStr
-        
+
     async def getHelp(self, channel, command):
         if command == '':
             logger.debug('[help]: Getting basic help page.')
@@ -112,7 +115,7 @@ class Bot(discord.Client):
             await self.send_message(channel, self.getHelpPluginTags())
 
         elif command == 'all':
-            logger.debug('[help]: Getting all help pages.') 
+            logger.debug('[help]: Getting all help pages.')
             await self.send_message(channel, self.getHelpBot())
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -124,9 +127,15 @@ class Bot(discord.Client):
                 helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                 for com in commands:
-                    helpStr += com + '\n'
+                    if len(helpStr) + len(com + '\n') < 2000:
+                        helpStr += com + '\n'
+                    else:
+                        await self.send_message(channel, helpStr)
+                        helpStr = '';
 
-                await self.send_message(channel, helpStr)
+                if helpStr:
+                    await self.send_message(channel, helpStr)
+
         elif command == 'bot':
             logger.debug('[help]: Getting bot help page.')
             await self.send_message(channel, self.getHelpBot())
@@ -134,7 +143,7 @@ class Bot(discord.Client):
         else:
             logger.debug('[help]: Finding plugin with tag/shortTag [%s]', command)
             # Check for short tag collision
-            if command in self.collisions:
+            if command in self.commandCollisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
                 await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
                 return
@@ -150,16 +159,40 @@ class Bot(discord.Client):
                     helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                     for com in commands:
-                        helpStr += com + '\n'
+                        if len(helpStr) + len(com + '\n') < 2000:
+                            helpStr += com + '\n'
+                        else:
+                            await self.send_message(channel, helpStr)
+                            helpStr = '';
+
+                    if helpStr:
+                        await self.send_message(channel, helpStr)
 
                     logger.debug('[help]: Plugin found; getting help page.')
-                    await self.send_message(channel, helpStr)
                     return
 
     def _scramble(self, sentence):
-        split = sentence.split()
-        shuffle(split)
-        return ' '.join(split)
+        words = sentence.split()
+
+        for i in range(len(words)):
+            m = re.search('([`_*~]+)(.+)([`_*~]+)', words[i])
+
+            if m:
+                prefix = m.group(1)
+                content = m.group(2)
+                suffix = m.group(3)
+
+                content = list(content)
+                shuffle(content)
+                content = ''.join(content)
+                words[i] = prefix + content + suffix
+
+            else:
+                words[i] = list(words[i])
+                shuffle(words[i])
+                words[i] = ''.join(words[i])
+
+        return ' '.join(words)
 
     async def getHalp(self, channel, command):
         if command == '':
@@ -171,7 +204,7 @@ class Bot(discord.Client):
             await self.send_message(channel, self._scramble(self.getHelpPluginTags()))
 
         elif command == 'all':
-            logger.debug('[halp]: Getting all halp pages.') 
+            logger.debug('[halp]: Getting all halp pages.')
             await self.send_message(channel, self._scramble(self.getHelpBot()))
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -183,9 +216,15 @@ class Bot(discord.Client):
                 helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                 for com in commands:
-                    helpStr += com + '\n'
+                    if len(helpStr) + len(com + '\n') < 2000:
+                        helpStr += com + '\n'
+                    else:
+                        await self.send_message(channel, self._scramble(helpStr))
+                        helpStr = '';
 
-                await self.send_message(channel, self._scramble(helpStr))
+                if helpStr:
+                    await self.send_message(channel, self._scramble(helpStr))
+
         elif command == 'bot':
             logger.debug('[halp]: Getting bot halp page.')
             await self.send_message(channel, self._scramble(self.getHelpBot()))
@@ -194,7 +233,7 @@ class Bot(discord.Client):
             logger.debug('[halp]: Finding plugin with tag/shortTag [%s]', command)
             # Check for short tag collision
             # Check for short tag collision
-            if command in self.collisions:
+            if command in self.commandCollisions:
                 logger.debug('There is more than one plugin with this short tag. Please use the full tag.')
                 await self.send_message(channel, 'There is more than one plugin with this short tag. Please use the full tag.')
                 return
@@ -210,10 +249,16 @@ class Bot(discord.Client):
                     helpStr += '**ShortTag:** ' + plugin.plugin_object.shortTag + '\n'
 
                     for com in commands:
-                        helpStr += com + '\n'
+                        if len(helpStr) + len(com + '\n') < 2000:
+                            helpStr += com + '\n'
+                        else:
+                            await self.send_message(channel, self._scramble(helpStr))
+                            helpStr = '';
+
+                    if helpStr:
+                        await self.send_message(channel, self._scramble(helpStr))
 
                     logger.debug('[halp]: Plugin found; getting halp page.')
-                    await self.send_message(channel, self._scramble(helpStr))
                     return
 
     async def reloadPlugins(self):
@@ -221,7 +266,7 @@ class Bot(discord.Client):
         self.pluginManager.locatePlugins()
         self.pluginManager.loadPlugins()
 
-        print('Registry', plugincommand.registry)
+        logger.debug('Registry: %s', str(plugincommand.registry))
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Give the plugin it's dictionary of commands (so it doesn't need to lookup later)
@@ -233,8 +278,10 @@ class Bot(discord.Client):
             await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
 
-        self.collisions = {}
+        self.commandCollisions = {}
+        self.getCommandCollisions()
 
+    def getCommandCollisions(self):
         # Generate a dictionary of tags & commands that collide
         for outer in self.pluginManager.getPluginsOfCategory("Plugins"):
             for inner in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -253,10 +300,10 @@ class Bot(discord.Client):
                         if com in inner.plugin_object.parsedCommands:
                             logger.warning('Plugin Command Collision! Command: [%s]', com)
 
-                            if outer.plugin_object.shortTag not in self.collisions:
-                                self.collisions[outer.plugin_object.shortTag] = []
+                            if outer.plugin_object.shortTag not in self.commandCollisions:
+                                self.commandCollisions[outer.plugin_object.shortTag] = []
 
-                            self.collisions[outer.plugin_object.shortTag].append(com)
+                            self.commandCollisions[outer.plugin_object.shortTag].append(com)
 
     async def shutdownPlugins(self):
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
@@ -279,9 +326,9 @@ class Bot(discord.Client):
     def isBotCommand(self, tag):
         if tag in self.botCommands:
             return True
-        
+
         return False
- 
+
     async def on_message(self, message):
         if message.author == self.user:
             return
@@ -289,10 +336,10 @@ class Bot(discord.Client):
         tag = ''
         command = ''
         args = ''
-            
+
         # If we have a command, extract the command and parameters (if any)
         if message.content.startswith('!'):
-            content =  message.content.split(' ', 2) 
+            content =  message.content.split(' ', 2)
             tag = content[0][1:]
 
             if len(content) > 1:
@@ -304,7 +351,7 @@ class Bot(discord.Client):
             if len(content) > 2:
                 args = content[2]
 
-        # We do something special with basic built-in commands 
+        # We do something special with basic built-in commands
         # because we don't want plugins using these
         if tag == 'help':
             await self.getHelp(message.channel, command)
@@ -319,11 +366,11 @@ class Bot(discord.Client):
                 await self.shutdownPlugins()
 
                 await self.logout()
-                return 
+                return
 
             logger.debug('[shutdown]: %s, You do not have permission to do that.', message.author)
             await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
-            return 
+            return
         elif tag =='hello':
             logger.debug('[hello]: Executing command hello.')
             await self.send_message(message.channel, 'Hello <@' + message.author.id + '>')
@@ -358,11 +405,11 @@ class Bot(discord.Client):
                 await self.send_message(message.channel, 'Failed to download image.')
                 return
 
-            file = open('images/botavatar' + extension, 'rb') 
+            file = open('images/botavatar' + extension, 'rb')
             bytes = file.read()
 
             logger.debug('[changebotavatar]: Changing bot avatar.')
-            
+
             if self.user.bot:
                 logger.debug('[changebotavatar]: User is a bot account.')
                 await self.edit_profile(None, avatar=bytes)
@@ -371,6 +418,27 @@ class Bot(discord.Client):
 
             logger.debug('[changebotavatar]: The Bot\'s Avatar has been updated.')
             await self.send_message(message.channel, 'The Bot\'s Avatar has been updated.')
+            return
+        elif tag == 'cleanassets':
+            logger.debug('[cleanassets]: Cleaning assets.')
+            if self.isAdmin(message.author):
+                # clean music files
+                shutil.rmtree('music/')
+                os.mkdir('music/')
+                logger.debug('[cleanassets]: Cleaned music assets.')
+
+                # clean image files
+                for file in glob.glob('images/*'):
+                    if not file.endswith('f14.jpg'):
+                        os.remove(file)
+
+                logger.debug('[cleanassets]: Cleaned image assets.')
+
+                await self.send_message(message.channel, 'Cleaned music and image assets.')
+                return
+
+            logger.debug('[cleanassets]: %s, You do not have permission to do that.', message.author)
+            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
             return
         elif tag == 'join':
             temp = []
@@ -399,7 +467,7 @@ class Bot(discord.Client):
                     return
 
 
-            self.logger.debug('[join]: Joining channel %s', chan) 
+            self.logger.debug('[join]: Joining channel %s', chan)
             self.voiceChannel = await self.join_voice_channel(chan)
             self.voiceStarter = message.author
 
@@ -421,12 +489,17 @@ class Bot(discord.Client):
             await self.send_message(message.channel, 'You do not have permission to do that. You must be an admin or the person who did the join command.')
             return
         elif tag == 'reload':
-            logger.debug('[reload]: Executing command reload')
-            await self.reloadPlugins()
+            if self.isAdmin(message.author):
+                logger.debug('[reload]: Executing command reload')
+                await self.reloadPlugins()
+                return
+
+            logger.debug('[shutdown]: %s, You do not have permission to do that.', message.author)
+            await self.send_message(message.channel, '<@' + message.author.id + '>, You do not have permission to do that.')
             return
 
         # Check for tag/command collisions here and resolve before letting the plugins handle it
-        for key, array in self.collisions.items():
+        for key, array in self.commandCollisions.items():
             for value in array:
                 if message.content.startswith('!' + key + ' ' + value):
                     logger.debug('There is more than one plugin with this short tag and command combination. Please use the full tag.')
@@ -441,7 +514,7 @@ class Bot(discord.Client):
                 await plugin.plugin_object.readMessage(message)
 
             # Check if a plugin can handle the command and execute it if they can
-            if tag != '' and command != '': 
+            if tag != '' and command != '':
                 temp = plugin.plugin_object.checkForCommand(tag, command, args)
 
                 if temp != False:
@@ -453,15 +526,15 @@ class Bot(discord.Client):
 
     def download_image(self, imgUrl, filename):
         try:
-            logger.debug('[download_image]: Opening url') 
+            logger.debug('[download_image]: Opening url')
             with urllib.request.urlopen(imgUrl) as imageOnWeb:
                 logger.debug('[download_image]: Checking if url is image')
                 if imageOnWeb.info()['Content-Type'].startswith('image'):
-                    logger.debug('[download_image]: Reading Image') 
+                    logger.debug('[download_image]: Reading Image')
                     buf = imageOnWeb.read()
                     logger.debug('[download_image]: Creating file [%s]', os.getcwd() + '/' + filename)
                     downloadedImage = open(os.getcwd() + '/' + filename, 'wb')
-                    logger.debug('[download_image]: Writing Image') 
+                    logger.debug('[download_image]: Writing Image')
                     downloadedImage.write(buf)
                     downloadedImage.close()
                     imageOnWeb.close()
@@ -526,7 +599,7 @@ class Bot(discord.Client):
                 return message
 
         return None
- 
+
     # Private helper for Settings API
     async def _getSettingsChannel(self, server):
         channel = discord.utils.get(server.channels, name=self.settingsChannelName, type=discord.ChannelType.text)
@@ -562,7 +635,7 @@ class Bot(discord.Client):
             channel = await self._getSettingsChannel(srv)
 
             logger.debug('Settings constructed for server %s.', srv)
-            return await self._getSettingsFromChannel(channel) 
+            return await self._getSettingsFromChannel(channel)
 
         logger.debug('The bot is not part of server %s!', server)
         return None
@@ -578,7 +651,7 @@ class Bot(discord.Client):
             channel = await self._getSettingsChannel(srv)
 
             logger.debug('Settings constructed for server %s.', srv)
-            return await self._getSettingsFromChannelForTag(channel, tag) 
+            return await self._getSettingsFromChannelForTag(channel, tag)
 
         logger.debug('The bot is not part of server %s!', server)
         return None

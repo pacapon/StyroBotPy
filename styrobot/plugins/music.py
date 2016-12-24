@@ -1,5 +1,6 @@
 from plugin import Plugin
 import os
+import shutil
 import pafy
 import asyncio
 import discord
@@ -11,7 +12,7 @@ class Song:
         self.requester = author
         self.channel = channel
         self.song = song
-    
+
 class Music(Plugin):
 
     async def initialize(self, bot):
@@ -31,7 +32,9 @@ class Music(Plugin):
         self.commands.append('<stop><0><Stops the song queue completely. Requires admin permissions.')
         self.commands.append('<next><1>(name)<Queue the song called [name] to be played next>')
         self.commands.append('<add><2>(url, name)<Download song at [url] (must be youtube) for playback using [name]>')
-        self.commands.append('<addnq<2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
+        self.commands.append('<addnq><2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
+        self.commands.append('<delete><*>(names)<Delete song(s) [name] [name] [...]>')
+        self.commands.append('<deleteall><0><Delete all songs>')
         self.commands.append('<songlist><0><Display the list of available songs to play>')
         self.commands.append('<queue><0><Display the list of queued songs>')
 
@@ -94,7 +97,7 @@ class Music(Plugin):
     async def _add_(self, server, channel, author, url, name):
         self.logger.debug('[add]: Adding song [%s] at url [%s]', name, url)
         await self.addSong(channel, url, name)
-         
+
     async def _addnq_(self, server, channel, author, url, name):
         self.logger.debug('[addnq]: Adding song [%s] at url [%s]', name, url)
         filename = await self.addSong(channel, url, name)
@@ -103,10 +106,38 @@ class Music(Plugin):
             self.logger.debug('[addnq]: Queuing song [%s]', filename)
             await self.queue_song(author, channel, filename)
 
+    async def _delete_(self, server, channel, author, names):
+        if self.bot.isAdmin(author):
+            names = names.split()
+            try:
+                for name in names:
+                    filename = 'music/' + name + '.mp3'
+                    os.remove(filename)
+                    self.logger.debug('[delete]: Deleted %s', filename)
+                    await self.bot.send_message(channel, 'Song ' + name + ' deleted')
+            except OSError:
+                self.logger.debug('[delete]: File %s does not exist', filename)
+                await self.bot.send_message(channel, 'Unable to delete song ' + name)
+            finally:
+                return
+
+        self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
+        await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
+
+    async def _deleteall_(self, server, channel, author):
+        if self.bot.isAdmin(author):
+            shutil.rmtree('music/')
+            os.mkdir('music/')
+            self.logger.debug('Deleting all songs from the music directory')
+            await self.bot.send_message(channel, 'Deleted all songs')
+            return
+
+        self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
+        await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
 
     async def _songlist_(self, server, channel, author):
         songFiles = os.listdir('music/')
-        songList = '' 
+        songList = ''
 
         for song in songFiles:
             songList += song
@@ -137,7 +168,7 @@ class Music(Plugin):
         except:
             self.logger.error('Failed to download song: %s', name)
             await self.bot.send_message(channel, 'Failed to download song: ' + name)
-            return False 
+            return False
 
         self.logger.debug('%s has been successfully added.', name)
         await self.bot.send_message(channel, name + ' has been successfully added.')
@@ -148,7 +179,7 @@ class Music(Plugin):
         video = pafy.new(url)
         audio = video.audiostreams
         songFile = audio[0].download(filepath="music/" + name + ".mp3")
-        
+
     async def skip(self, channel):
         self.player.stop()
 
@@ -185,7 +216,7 @@ class Music(Plugin):
                 self.logger.debug('Not connected to a channel.')
                 await self.bot.send_message(channel, 'Not connected to a channel.')
                 return
-            
+
             self.play_next_song.clear()
             self.currentSong = await self.songs.get()
             self.songNames.pop(0)
@@ -217,7 +248,7 @@ class Music(Plugin):
         self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
     def can_control_song(self, author):
-        return author == self.starter or (self.currentSong is not None and author == self.currentSong.requester) or self.bot.isAdmin(author) 
+        return author == self.starter or (self.currentSong is not None and author == self.currentSong.requester) or self.bot.isAdmin(author)
 
     def is_playing(self):
         return self.player is not None and self.player.is_playing()
@@ -229,4 +260,3 @@ class Music(Plugin):
         await self.stop()
         self.starter = None
         self.player = None
-
