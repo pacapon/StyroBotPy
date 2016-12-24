@@ -11,10 +11,6 @@ class Quotes(Plugin):
         self.tag = 'quotes'
         self.shortTag = 'q'
 
-        self.commands.append('<quote><0><Say a random quote from the quotes channel>')
-        self.commands.append('<channel><0><Says which channel is being used for quotes>')
-        self.commands.append('<setchannel><1>(name)<Changes the channel to use for quotes to the channel called [name]>')
-
         self.logger.debug('This Bot is part of %s servers!', str(len(self.bot.servers)))
 
         for server in self.bot.servers:
@@ -31,6 +27,7 @@ class Quotes(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
+    @styrobot.plugincommand('Say a random quote from the quotes channel', name='quote')
     async def _quote_(self, server, channel, author):
         quotes = []
         async for message in self.bot.logs_from(self.channel, limit=1000000):
@@ -46,10 +43,12 @@ class Quotes(Plugin):
         self.logger.debug('[quote]: %s', randQuote.content)
         await self.bot.send_message(channel, randQuote.content)
 
+    @styrobot.plugincommand('Says which channel is being used for quotes', name='channel')
     async def _channel_(self, server, channel, author):
         self.logger.debug('[channel]: The current quote channel is: %s', self.channelName)
         await self.bot.send_message(channel, 'The current quote channel is: ' + self.channelName)
 
+    @styrobot.plugincommand('Changes the channel to use for quotes to the channel called <channame>', name='setchannel')
     async def _setchannel_(self, server, channel, author, channame):
         self.logger.debug('[setchannel]: Finding channel with name [%s]', channame)
         newChan = discord.utils.get(server.channels, name=channame, type=discord.ChannelType.text)
