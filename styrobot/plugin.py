@@ -34,13 +34,13 @@ class Plugin:
         commands = []
 
         for key, value in self.parsedCommands.items():
-            str = '**!{} {} '.format(self.tag, key)
+            str = '`!{} {} '.format(self.tag, key)
         
             if len(value[CommandRegistry.PARAM_NAMES]) != 0:
                 for paramName in value[CommandRegistry.PARAM_NAMES]:
                     str += '<{}> '.format(paramName)
 
-            str += '**  - {}'.format(value[CommandRegistry.DESCRIPTION])
+            str += '`  - {}'.format(value[CommandRegistry.DESCRIPTION])
             commands.append(str)
 
         return commands
