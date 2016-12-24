@@ -3,6 +3,8 @@ import discord
 import logging
 import os
 import pafy
+import styrobot
+import commands
 
 class Trollolo(Plugin):
 
@@ -11,15 +13,10 @@ class Trollolo(Plugin):
         self.shortTag = 't'
         self.player = None
 
-        self.commands.append('<rickroll><*>(username)<Rick Rolls the person by sending them the video privately>')
-        self.commands.append('<nevergonna><0><Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!>')
-        self.commands.append('<trololo><0><Saruman has never sounded more beautiful>')
-        self.commands.append('<isengard><0><They are taking the hobbits to isengardgardgardgagagagard>')
-        self.commands.append('<heyeayea><0><And I said heyeayeayeayea! heyeayea! I said hey! What\'s going on?>')
-
         if not os.path.exists('troll'):
             os.makedirs('troll')
 
+    @styrobot.plugincommand('Rick Rolls the person by sending them the video privately', name='rickroll', parserType=commands.ParamParserType.ALL)
     async def _rickroll_(self, server, channel, author, username):
         person = discord.utils.get(server.members, name=username)
 
@@ -43,18 +40,22 @@ class Trollolo(Plugin):
 
         await self.bot.send_message(channel, url) 
 
+    @styrobot.plugincommand('Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!', name='nevergonna')
     async def _nevergonna_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
         await self.playTroll(server, channel, url, 'nevergonna')
 
+    @styrobot.plugincommand('Saruman has never sounded more beautiful', name='trololo')
     async def _trololo_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=KaqC5FnvAEc'
         await self.playTroll(server, channel, url, 'trololo')
 
+    @styrobot.plugincommand('They are taking the hobbits to isengardgardgardgagagagard', name='isengard')
     async def _isengard_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=uE-1RPDqJAY'
         await self.playTroll(server, channel, url, 'isengard')
 
+    @styrobot.plugincommand('And I said heyeayeayeayea! heyeayea! I said hey! What\'s going on?', name='heyeayea')
     async def _heyeayea_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=ZZ5LpwO-An4'
         await self.playTroll(server, channel, url, 'heyeayea')
