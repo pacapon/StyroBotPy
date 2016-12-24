@@ -1,7 +1,7 @@
 import abc
 import logging
 import inspect
-from commands import CommandRegistry, ParamParserType
+from commands import CommandRegistry, ParamParserType, BaseCommandStructure
 
 class Plugin:
     __metaclass__ = abc.ABCMeta
@@ -29,21 +29,9 @@ class Plugin:
     # Gets the list of commands and their descriptions that this plugin can do
     # Format: !<tag> <commandname> <parameters>  - <description>
     # example: !file save <url> <name>  - Saves the file at <url> to a local file named <name>
-    # @return  An array of strings formatted like the example above
-    def getCommands(self):
-        commands = []
-
-        for key, value in self.parsedCommands.items():
-            str = '`!{} {} '.format(self.tag, key)
-        
-            if len(value[CommandRegistry.PARAM_NAMES]) != 0:
-                for paramName in value[CommandRegistry.PARAM_NAMES]:
-                    str += '<{}> '.format(paramName)
-
-            str += '`  - {}'.format(value[CommandRegistry.DESCRIPTION])
-            commands.append(str)
-
-        return commands
+    # @return  An array of help strings
+    def getCommandHelp(self):
+        return BaseCommandStructure._getCommandHelp(self.parsedCommands, self.tag)
 
     # Checks if this plugin handles the command provided by the user
     # @param tag      The tag which identifies the plugin (this could be their short tag)
@@ -53,54 +41,14 @@ class Plugin:
     def checkForCommand(self, tag, command, args):
         if tag != self.tag and tag != self.shortTag:
             return False
+
+        return BaseCommandStructure._checkForCommand(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
     
-        for key, value in self.parsedCommands.items():
-            if key == command:
-                num = int(value[CommandRegistry.NUM_PARAMS])
-                temp = self.defaultParser(args)
-                parserType = self.defaultParserType
-                
-                if value[CommandRegistry.OVERRIDE_DEFAULT_PARSER] == True:
-                    temp = value[CommandRegistry.PARAM_PARSER](args)
-                    parserType = value[CommandRegistry.PARAM_PARSER_TYPE]
-
-                self.logger.debug('Command Found!')
-                self.logger.debug('ParserType: %s', parserType)
-
-                # Break out early if no params
-                if num == 0:
-                    self.logger.debug('Args: []')
-                    return []
-
-                # Break out early if we want all the arguments as a parameter
-                if parserType == ParamParserType.ALL:
-                    self.logger.debug('Args: [%s]', temp)
-                    return [temp]
-
-                self.logger.debug('Args: %s', temp[:num])
-                return temp[:num]
-
-        return False
-
     # Executes the chat command
-    # @param channel     The discord channel this command was executed in
-    # @param author      The user which executed this command
-    # @param command     The command to execute
-    # @param args        Any extra parameters that followed the command
+    # @param args       Any extra parameters that followed the command
+    # @param kwargs     The information for the command
     async def executeCommand(self, args, **kwargs):
-        command = kwargs.pop('command')
-        num = self.parsedCommands[command][CommandRegistry.NUM_PARAMS]
-        paramNames = self.parsedCommands[command][CommandRegistry.PARAM_NAMES]
-        funcName = self.parsedCommands[command][CommandRegistry.FUNCTION_NAME]
-
-        if len(args) != len(paramNames):
-            self.logger.error('The number of arguments (%s) and the number of parameter names (%s) does not match!', len(args), len(paramNames))
-
-        for i, name in enumerate(paramNames):
-            kwargs[name] = args[i]
-
-        self.logger.debug('Executing command [%s] with arguments [%s]', command, str(args)[1:-1])
-        await getattr(self, funcName)(**kwargs)
+        await BaseCommandStructure._executeCommand(self, self.parsedCommands, args, self.logger, **kwargs)
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something

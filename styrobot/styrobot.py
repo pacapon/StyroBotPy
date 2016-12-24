@@ -113,7 +113,7 @@ class Bot(discord.Client):
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 helpStr = ''
-                commands = plugin.plugin_object.getCommands()
+                commands = plugin.plugin_object.getCommandHelp()
 
                 helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
                 helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
@@ -145,7 +145,7 @@ class Bot(discord.Client):
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 if command == plugin.plugin_object.tag or command == plugin.plugin_object.shortTag:
                     helpStr = ''
-                    commands = plugin.plugin_object.getCommands()
+                    commands = plugin.plugin_object.getCommandHelp()
 
                     helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
                     helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
@@ -202,7 +202,7 @@ class Bot(discord.Client):
 
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 helpStr = ''
-                commands = plugin.plugin_object.getCommands()
+                commands = plugin.plugin_object.getCommandHelp()
 
                 helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
                 helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
@@ -235,7 +235,7 @@ class Bot(discord.Client):
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 if command == plugin.plugin_object.tag or command == plugin.plugin_object.shortTag:
                     helpStr = ''
-                    commands = plugin.plugin_object.getCommands()
+                    commands = plugin.plugin_object.getCommandHelp()
 
                     helpStr += '\n__**' + plugin.name + ' Commands:**__\n'
                     helpStr += '**Tag:** ' + plugin.plugin_object.tag + '\n'
