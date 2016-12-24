@@ -1,6 +1,7 @@
 from plugin import Plugin
 import random
 import logging
+import styrobot
 
 class HighRoller(Plugin):
     
@@ -9,10 +10,7 @@ class HighRoller(Plugin):
         self.tag = 'highroller'
         self.shortTag = 'hr'
 
-        self.commands.append('<roll><1>(number)<Rolls a dice of size [number]>')
-        self.commands.append('<callflip><1>(name)<Call the next coinflip (Heads or Tails)>')
-        self.commands.append('<flipcoin><0><Flips a coin>')
-
+    @styrobot.plugincommand('Rolls a dice of size <number>', name='roll')
     async def _roll_(self, server, channel, author, number):
         if self.isNumber(number) and int(number) > 0:
             result = self.rollDice(int(number))
@@ -23,6 +21,7 @@ class HighRoller(Plugin):
             self.logger.debug('[roll]: You can\'t roll a dice smaller than 1.')
             await self.bot.send_message(channel, 'You can\'t roll a dice smaller than 1.')
 
+    @styrobot.plugincommand('Call the next coinflip (Heads or Tails)', name='callflip')
     async def _callflip_(self, server, channel, author, name):
         firstWord = name.lower()
 
@@ -30,6 +29,9 @@ class HighRoller(Plugin):
             self.callFlip[str(author)] = ['heads', author.id]
         elif firstWord == 'tail' or firstWord == 'tails':
             self.callFlip[str(author)] = ['tails', author.id]
+        else:
+            await self.bot.send_message(channel, 'You have to specify heads or tails!')
+            return
 
         if len(self.callFlip) == 2:
             p1name = ''
@@ -62,6 +64,7 @@ class HighRoller(Plugin):
             self.logger.debug('[callflip]: %s', logmessage)
             await self.bot.send_message(channel, message)
 
+    @styrobot.plugincommand('Flips a coin', name='flipcoin')
     async def _flipcoin_(self, server, channel, author):
         result = self.flipCoin()
         self.logger.debug('[flipcoin]: %s!', result)
