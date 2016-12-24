@@ -12,7 +12,8 @@ class Plugin:
         self.bot = bot
         self.tag = name
         self.shortTag = name[0]
-        self.commands = []
+        self.defaultParserType = ParamParserType.SPACES
+        self.defaultParser = CommandRegistry.PARAM_PARSER_SPACES
         self.logger = logging.getLogger('styrobot.' + name)
 
         await self.initialize(bot)
@@ -55,9 +56,13 @@ class Plugin:
     
         for key, value in self.parsedCommands.items():
             if key == command:
-                temp = value[CommandRegistry.PARAM_PARSER](args)
                 num = int(value[CommandRegistry.NUM_PARAMS])
-                parserType = value[CommandRegistry.PARAM_PARSER_TYPE]
+                temp = self.defaultParser(args)
+                parserType = self.defaultParserType
+                
+                if value[CommandRegistry.OVERRIDE_DEFAULT_PARSER] == True:
+                    temp = value[CommandRegistry.PARAM_PARSER](args)
+                    parserType = value[CommandRegistry.PARAM_PARSER_TYPE]
 
                 self.logger.debug('Command Found!')
                 self.logger.debug('ParserType: %s', parserType)

@@ -13,6 +13,7 @@ class CommandRegistry():
     DESCRIPTION = 'description'
     COMMAND_NAME = 'name'
     FUNCTION_NAME = 'funcName'
+    OVERRIDE_DEFAULT_PARSER = 'overrideDefaultParser'
     PARAM_PARSER = 'paramParser'
     PARAM_PARSER_TYPE = 'paramParserType'
     PARAM_PARSER_SPACES = lambda args: args.split(' ')
@@ -20,6 +21,13 @@ class CommandRegistry():
 
     def __init__(self):
         self.registry = {}
+
+# Reference for auto registering decorated functions for a class
+# http://stackoverflow.com/questions/3054372/auto-register-class-methods-using-decorator
+# I should explore this and see if I can use it
+
+# Reference for auto registering decorated functions
+# http://stackoverflow.com/questions/5707589/calling-functions-by-array-index-in-python/5707605#5707605
 
 def _loadCommands():
     def commandRegistrar(description, **kwargs):
@@ -53,24 +61,21 @@ def _loadCommands():
             commandRegistry.registry[className][commandName][CommandRegistry.NUM_PARAMS] = len(params) 
             commandRegistry.registry[className][commandName][CommandRegistry.PARAM_NAMES] = params 
             commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION] = description 
+            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
+            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = CommandRegistry.PARAM_PARSER_SPACES
+            commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = False
 
             if 'parser' in kwargs:
                 commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = kwargs['parser']
                 commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.CUSTOM
-            else:
-                if 'parserType' in kwargs:
-                    isValid = lambda enumVal: True if enumVal in ParamParserType and enumVal != ParamParserType.CUSTOM else False
+                commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = True
+            elif 'parserType' in kwargs:
+                isValid = lambda enumVal: True if enumVal in ParamParserType and enumVal != ParamParserType.CUSTOM else False
 
-                    if isValid(kwargs['parserType']):
-                        commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = kwargs['parserType']
-                        commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = getattr(CommandRegistry, 'PARAM_PARSER_' + kwargs['parserType'].name)
-                    else:
-                        commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
-                        commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = CommandRegistry.PARAM_PARSER_SPACES
-                else:
-                    commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
-                    commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = CommandRegistry.PARAM_PARSER_SPACES
-
+                if isValid(kwargs['parserType']):
+                    commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = kwargs['parserType']
+                    commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = getattr(CommandRegistry, 'PARAM_PARSER_' + kwargs['parserType'].name)
+                    commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = True
 
             #print('Registry Parser:', commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER])
             #print('Registry Parser Type:', commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE])

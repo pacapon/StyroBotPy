@@ -15,13 +15,6 @@ import re
 if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
 
-# Reference for auto registering decorated functions for a class
-# http://stackoverflow.com/questions/3054372/auto-register-class-methods-using-decorator
-# I should explore this and see if I can use it
-
-# Reference for auto registering decorated functions
-# http://stackoverflow.com/questions/5707589/calling-functions-by-array-index-in-python/5707605#5707605
-
 # Plugin Command dictionary and decorator
 plugincommand = commands._loadCommands()
 
