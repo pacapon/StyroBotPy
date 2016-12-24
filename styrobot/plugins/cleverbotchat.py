@@ -1,15 +1,16 @@
 from plugin import Plugin
 import cleverbot
 import logging
+import styrobot
+import commands
 
 class CleverBotChat(Plugin):
     async def initialize(self, bot):
         self.cb = cleverbot.Cleverbot()
         self.tag = 'cleverbot'
         self.shortTag = 'cb'
-        
-        self.commands.append('<chat><*>(text)<Sends a message to CleverBot>')
 
+    @styrobot.plugincommand('Sends a message to CleverBot', name='chat', parserType=commands.ParamParserType.ALL)
     async def _chat_(self, server, channel, author, text):
         self.logger.debug('[chat] [%s]: %s', author, text)
         response = self.cb.ask(text)
