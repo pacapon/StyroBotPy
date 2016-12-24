@@ -6,6 +6,7 @@ import asyncio
 import discord
 import styrobot
 import logging
+import commands
 
 class Song:
     def __init__(self, author, channel, song):
@@ -25,23 +26,12 @@ class Music(Plugin):
         self.tag = 'music'
         self.shortTag = 'm'
 
-        self.commands.append('<play><0><Play the queued songs>')
-        self.commands.append('<pause><0><Pause the currently playing song>')
-        self.commands.append('<resume><0><Resume the currently paused song>')
-        self.commands.append('<skip><0><Skip the currently playing song>')
-        self.commands.append('<stop><0><Stops the song queue completely. Requires admin permissions.')
-        self.commands.append('<next><1>(name)<Queue the song called [name] to be played next>')
-        self.commands.append('<add><2>(url, name)<Download song at [url] (must be youtube) for playback using [name]>')
-        self.commands.append('<addnq><2>(url, name)<Download song at [url] (must be youtube) for playback using [name] and queue to be played next')
-        self.commands.append('<delete><*>(names)<Delete song(s) [name] [name] [...]>')
-        self.commands.append('<deleteall><0><Delete all songs>')
-        self.commands.append('<songlist><0><Display the list of available songs to play>')
-        self.commands.append('<queue><0><Display the list of queued songs>')
-
+    @styrobot.plugincommand('Play the queued songs', name='play')
     async def _play_(self, server, channel, author):
         await self.play(channel)
         self.logger.debug('[play]: Playing the song queue')
 
+    @styrobot.plugincommand('Pause the currently playing song', name='pause')
     async def _pause_(self, server, channel, author):
         if not self.can_control_song(author):
             fmt = 'Only the requester (<@{0.currentSong.requester.id}>) or an admin can control this song.'
@@ -56,6 +46,7 @@ class Music(Plugin):
             await self.bot.send_message(channel, 'Pausing song.')
             self.logger.debug('[pause]: Pausing song.')
 
+    @styrobot.plugincommand('Resume the currently paused song', name='resume')
     async def _resume_(self, server, channel, author):
         if not self.can_control_song(author):
             fmt = 'Only the requester (<@{0.currentSong.requester.id}>) or an admin can control this song.'
@@ -70,6 +61,7 @@ class Music(Plugin):
             await self.bot.send_message(channel, 'Resuming song.')
             self.logger.debug('[resume]: Resuming song.')
 
+    @styrobot.plugincommand('Skip the currently playing song', name='skip')
     async def _skip_(self, server, channel, author):
         if self.songs.qsize() <= 0:
             self.logger.debug('[skip]: Can\'t skip, 1 or less songs remaining.')
@@ -80,6 +72,7 @@ class Music(Plugin):
         await self.bot.send_message(channel, 'Skipping song.')
         self.logger.debug('[skip]: Skipping song.')
 
+    @styrobot.plugincommand('Stops the song queue completely. Requires admin permissions.', name='stop')
     async def _stop_(self, server, channel, author):
         if not self.bot.isAdmin(author):
             self.logger.debug('[stop]: You must be an admin to do this.')
@@ -89,15 +82,18 @@ class Music(Plugin):
         self.logger.debug('[stop]: Stopping song queue.')
         await self.stop()
 
+    @styrobot.plugincommand('Queue the song called <name> to be played next', name='next')
     async def _next_(self, server, channel, author, name):
         filename = 'music/' + name.strip() + '.mp3'
         self.logger.debug('[next]: Queuing song %s', filename)
         await self.queue_song(author, channel, filename)
 
+    @styrobot.plugincommand('Download song at <url> (must be youtube) for playback using <name>', name='add')
     async def _add_(self, server, channel, author, url, name):
         self.logger.debug('[add]: Adding song [%s] at url [%s]', name, url)
         await self.addSong(channel, url, name)
 
+    @styrobot.plugincommand('Download song at <url> (must be youtube) for playback using <name> and queue to be played next', name='addnq')
     async def _addnq_(self, server, channel, author, url, name):
         self.logger.debug('[addnq]: Adding song [%s] at url [%s]', name, url)
         filename = await self.addSong(channel, url, name)
@@ -106,6 +102,7 @@ class Music(Plugin):
             self.logger.debug('[addnq]: Queuing song [%s]', filename)
             await self.queue_song(author, channel, filename)
 
+    @styrobot.plugincommand('Delete song(s) <name> <name> <...>', name='delete', parserType=commands.ParamParserType.ALL)
     async def _delete_(self, server, channel, author, names):
         if self.bot.isAdmin(author):
             names = names.split()
@@ -124,6 +121,7 @@ class Music(Plugin):
         self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
         await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
 
+    @styrobot.plugincommand('Delete all songs', name='deleteall')
     async def _deleteall_(self, server, channel, author):
         if self.bot.isAdmin(author):
             shutil.rmtree('music/')
@@ -135,6 +133,7 @@ class Music(Plugin):
         self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
         await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
 
+    @styrobot.plugincommand('Display the list of available songs to play', name='songlist')
     async def _songlist_(self, server, channel, author):
         songFiles = os.listdir('music/')
         songList = ''
@@ -146,6 +145,7 @@ class Music(Plugin):
         self.logger.debug('[songlist]: Songs: %s', songList)
         await self.bot.send_message(channel, 'Songs: \n' + songList)
 
+    @styrobot.plugincommand('Display the list of queued songs', name='queue')
     async def _queue_(self, server, channel, author):
         if len(self.songNames) == 0:
             self.logger.debug('[queue]: There are no queued songs.')
