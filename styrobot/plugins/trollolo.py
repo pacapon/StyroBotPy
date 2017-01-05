@@ -34,11 +34,11 @@ class Trollolo(Plugin):
 
             if not self.is_playing():
                 voiceChannel = self.bot.voice_client_in(server)
-                self.player = voiceChannel.create_ffmpeg_player('troll/'+ filename + '.mp3') 
+                self.player = voiceChannel.create_ffmpeg_player('troll/'+ filename + '.mp3')
                 self.player.start()
                 return
 
-        await self.bot.send_message(channel, url) 
+        await self.bot.send_message(channel, url)
 
     @styrobot.plugincommand('Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!', name='nevergonna')
     async def _nevergonna_(self, server, channel, author):
@@ -59,6 +59,11 @@ class Trollolo(Plugin):
     async def _heyeayea_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=ZZ5LpwO-An4'
         await self.playTroll(server, channel, url, 'heyeayea')
+
+    @styrobot.plugincommand('Nyan nyan nyan', name='nyan')
+    async def _heyeayea_(self, server, channel, author):
+        url = 'https://www.youtube.com/watch?v=QH2-TGUlwu4'
+        await self.playTroll(server, channel, url, 'nyan')
 
     def dl_song(self, url, name):
         video = pafy.new(url)
