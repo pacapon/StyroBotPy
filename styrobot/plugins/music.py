@@ -31,6 +31,12 @@ class Music(Plugin):
         await self.play(channel)
         self.logger.debug('[play]: Playing the song queue')
 
+    @styrobot.plugincommand('Display currently playing song', name='playing')
+    async def _playing_(self, server, channel, author):
+        song = self.currentSong.song.replace('music/', '')
+        await self.bot.send_message(channel, 'Currently playing: ' + song)
+        self.logger.debug('[playing]: Currently playing: %s', song)
+
     @styrobot.plugincommand('Pause the currently playing song', name='pause')
     async def _pause_(self, server, channel, author):
         if not self.can_control_song(author):
