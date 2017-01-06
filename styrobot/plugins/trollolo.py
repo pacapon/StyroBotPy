@@ -18,14 +18,22 @@ class Trollolo(Plugin):
 
     @styrobot.plugincommand('Rick Rolls the person by sending them the video privately', name='rickroll', parserType=commands.ParamParserType.ALL)
     async def _rickroll_(self, server, channel, author, username):
-        person = discord.utils.get(server.members, name=username)
+        user = None
 
-        if person == None:
+        for member in server.members:
+            if member.display_name == username:
+                user = member
+                break
+
+        if not user:
+            user = discord.utils.get(server.members, name=username)
+
+        if user:
+            self.logger.debug('Rick Rolling %s', user)
+            await self.bot.send_message(user, '<https://www.youtube.com/watch?v=dQw4w9WgXcQ>')
+        else:
             self.logger.debug('There is no user with this name.')
             await self.bot.send_message(channel, 'There is no user with this name.')
-        else:
-            self.logger.debug('Rick Rolling %s', person)
-            await self.bot.send_message(person, '<https://www.youtube.com/watch?v=dQw4w9WgXcQ>')
 
     async def playTroll(self, server, channel, url, filename):
         if self.bot.is_voice_connected(server):
