@@ -18,14 +18,22 @@ class Trollolo(Plugin):
 
     @styrobot.plugincommand('Rick Rolls the person by sending them the video privately', name='rickroll', parserType=commands.ParamParserType.ALL)
     async def _rickroll_(self, server, channel, author, username):
-        person = discord.utils.get(server.members, name=username)
+        user = None
 
-        if person == None:
+        for member in server.members:
+            if member.display_name == username:
+                user = member
+                break
+
+        if not user:
+            user = discord.utils.get(server.members, name=username)
+
+        if user:
+            self.logger.debug('Rick Rolling %s', user)
+            await self.bot.send_message(user, '<https://www.youtube.com/watch?v=dQw4w9WgXcQ>')
+        else:
             self.logger.debug('There is no user with this name.')
             await self.bot.send_message(channel, 'There is no user with this name.')
-        else:
-            self.logger.debug('Rick Rolling %s', person)
-            await self.bot.send_message(person, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
 
     async def playTroll(self, server, channel, url, filename):
         if self.bot.is_voice_connected(server):
@@ -34,11 +42,11 @@ class Trollolo(Plugin):
 
             if not self.is_playing():
                 voiceChannel = self.bot.voice_client_in(server)
-                self.player = voiceChannel.create_ffmpeg_player('troll/'+ filename + '.mp3') 
+                self.player = voiceChannel.create_ffmpeg_player('troll/'+ filename + '.mp3')
                 self.player.start()
                 return
 
-        await self.bot.send_message(channel, url) 
+        await self.bot.send_message(channel, url)
 
     @styrobot.plugincommand('Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!', name='nevergonna')
     async def _nevergonna_(self, server, channel, author):
@@ -59,6 +67,11 @@ class Trollolo(Plugin):
     async def _heyeayea_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=ZZ5LpwO-An4'
         await self.playTroll(server, channel, url, 'heyeayea')
+
+    @styrobot.plugincommand('Nyan nyan nyan', name='nyan')
+    async def _heyeayea_(self, server, channel, author):
+        url = 'https://www.youtube.com/watch?v=QH2-TGUlwu4'
+        await self.playTroll(server, channel, url, 'nyan')
 
     def dl_song(self, url, name):
         video = pafy.new(url)

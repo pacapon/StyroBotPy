@@ -31,6 +31,12 @@ class Music(Plugin):
         await self.play(channel)
         self.logger.debug('[play]: Playing the song queue')
 
+    @styrobot.plugincommand('Display currently playing song', name='playing')
+    async def _playing_(self, server, channel, author):
+        song = self.currentSong.song.replace('music/', '')
+        await self.bot.send_message(channel, 'Currently playing: ' + song)
+        self.logger.debug('[playing]: Currently playing: %s', song)
+
     @styrobot.plugincommand('Pause the currently playing song', name='pause')
     async def _pause_(self, server, channel, author):
         if not self.can_control_song(author):
@@ -133,17 +139,21 @@ class Music(Plugin):
         self.logger.debug('[delete]: %s, You do not have permission to do that.', author)
         await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
 
-    @styrobot.plugincommand('Display the list of available songs to play', name='songlist')
-    async def _songlist_(self, server, channel, author):
+    @styrobot.plugincommand('Display the list of available songs to play', name='library')
+    async def _library_(self, server, channel, author):
         songFiles = os.listdir('music/')
-        songList = ''
+        library = ''
+
+        if not songFiles:
+            await self.bot.send_message(channel, 'No songs to display.')
+            return
 
         for song in songFiles:
-            songList += song
-            songList += '\n'
+            library += song
+            library += '\n'
 
-        self.logger.debug('[songlist]: Songs: %s', songList)
-        await self.bot.send_message(channel, 'Songs: \n' + songList)
+        self.logger.debug('[songlist]: Songs: %s', library)
+        await self.bot.send_message(channel, 'Songs: \n' + library)
 
     @styrobot.plugincommand('Display the list of queued songs', name='queue')
     async def _queue_(self, server, channel, author):
