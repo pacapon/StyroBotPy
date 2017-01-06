@@ -49,41 +49,49 @@ class BaseCommandStructure:
 
         return commands
 
-    # Checks if the command provided by the user is handled and returns the parsed arguments if it does
+    # Checks if the command provided by the user is handled 
+    # @param commandList        The list of commands 
+    # @param command            The command the user wants to execute
+    # @return                   Returns False if it can't handle it, True if it can
+    def _isCommand(commandList, command):
+        return (True if command in commandList else False)
+
+    # Parses the args based on the command's settings
     # @param commandList        The list of commands 
     # @param command            The command the user wants to execute
     # @param args               The remaining text, which will be parsed into args for execution
     # @param defaultParser      The default parser to use on the args if an override isn't given
     # @param defaultParserType  The type of the default parser
     # @param logger             The logger to use (not required)
-    # @return                   Returns False if it can't handle it. If it can, it returns the parsed args in an array
-    def _checkForCommand(commandList, command, args, defaultParser, defaultParserType, logger = None):
-        for key, value in commandList.items():
-            if key == command:
-                num = int(value[CommandRegistry.NUM_PARAMS])
-                temp = defaultParser(args)
-                parserType = defaultParserType 
+    # @return                   Returns the parsed args in an array
+    def _parseCommandArgs(commandList, command, args, defaultParser, defaultParserType, logger = None):
+        if command in commandList:
+            cmd = commandList[command]
+
+            num = int(cmd[CommandRegistry.NUM_PARAMS])
+            temp = defaultParser(args)
+            parserType = defaultParserType 
                 
-                if value[CommandRegistry.OVERRIDE_DEFAULT_PARSER] == True:
-                    temp = value[CommandRegistry.PARAM_PARSER](args)
-                    parserType = value[CommandRegistry.PARAM_PARSER_TYPE]
+            if cmd[CommandRegistry.OVERRIDE_DEFAULT_PARSER] == True:
+                temp = cmd[CommandRegistry.PARAM_PARSER](args)
+                parserType = cmd[CommandRegistry.PARAM_PARSER_TYPE]
 
-                if logger is not None:
-                    logger.debug('Command Found!')
-                    logger.debug('ParserType: %s', parserType)
+            if logger is not None:
+                logger.debug('Command [%s] Parsed', command)
+                logger.debug('ParserType: %s', parserType)
 
-                # Break out early if no params
-                if num == 0:
-                    if logger is not None: logger.debug('Args: []')
-                    return []
+            # Break out early if no params
+            if num == 0:
+                if logger is not None: logger.debug('Args: []')
+                return []
 
-                # Break out early if we want all the arguments as a parameter
-                if parserType == ParamParserType.ALL:
-                    if logger is not None: logger.debug('Args: [%s]', temp)
-                    return [temp]
+            # Break out early if we want all the arguments as a parameter
+            if parserType == ParamParserType.ALL:
+                if logger is not None: logger.debug('Args: [%s]', temp)
+                return [temp]
 
-                if logger is not None: logger.debug('Args: %s', temp[:num])
-                return temp[:num]
+            if logger is not None: logger.debug('Args: %s', temp[:num])
+            return temp[:num]
 
         return False
 
