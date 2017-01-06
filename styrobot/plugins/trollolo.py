@@ -25,7 +25,7 @@ class Trollolo(Plugin):
             await self.bot.send_message(channel, 'There is no user with this name.')
         else:
             self.logger.debug('Rick Rolling %s', person)
-            await self.bot.send_message(person, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+            await self.bot.send_message(person, '<https://www.youtube.com/watch?v=dQw4w9WgXcQ>')
 
     async def playTroll(self, server, channel, url, filename):
         if self.bot.is_voice_connected(server):
