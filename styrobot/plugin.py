@@ -38,11 +38,15 @@ class Plugin:
     # @param command  The command the user wants to execute
     # @param args     The remaining text, which will be parsed into args for execution
     # @return         Returns False if it can't handle it. If it can, it returns the parsed args in an array
-    def checkForCommand(self, tag, command, args):
+    def isCommand(self, tag, command):
         if tag != self.tag and tag != self.shortTag:
             return False
 
-        return BaseCommandStructure._checkForCommand(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
+        return BaseCommandStructure._isCommand(self.parsedCommands, command)
+
+    def parseCommandArgs(self, command, args):
+        return BaseCommandStructure._parseCommandArgs(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
+
     
     # Executes the chat command
     # @param args       Any extra parameters that followed the command
