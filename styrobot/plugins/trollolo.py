@@ -69,7 +69,7 @@ class Trollolo(Plugin):
         await self.playTroll(server, channel, url, 'heyeayea')
 
     @styrobot.plugincommand('Nyan nyan nyan', name='nyan')
-    async def _heyeayea_(self, server, channel, author):
+    async def _nyan_(self, server, channel, author):
         url = 'https://www.youtube.com/watch?v=QH2-TGUlwu4'
         await self.playTroll(server, channel, url, 'nyan')
 
