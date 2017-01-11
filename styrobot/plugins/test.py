@@ -29,6 +29,18 @@ class Test(Plugin):
             self.logger.debug('No quotes channel found, creating channel')
             self.channel = await self.bot.create_channel(server, self.channelName)
 
+    @styrobot.plugincommand('Overload test!', name='overload')
+    async def _overload_(self, server, channel, author, **kwargs):
+        await self.bot.send_message(channel, 'Overload Master')
+
+    @styrobot.plugincommand('Overload test 1!', name='overload')
+    async def _overload1_(self, server, channel, author, test1, **kwargs):
+        await self.bot.send_message(channel, 'Overload 1: ' + test1)
+
+    @styrobot.plugincommand('Overload test 2!', name='overload')
+    async def _overload2_(self, server, channel, author, test1, test2, **kwargs):
+        await self.bot.send_message(channel, 'Overload 2: ' + test1 + ' & ' + test2)
+
     @styrobot.plugincommand('Say a random quote from the quotes channel', name='quote')
     async def _quote_(self, server, channel, author, **kwargs):
         #print('Description:', Plugin.commandMetadata['Test._quote_']['_description'])

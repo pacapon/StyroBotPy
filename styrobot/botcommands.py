@@ -25,26 +25,26 @@ class BotCommands:
     # example: !save <url> <name>  - Saves the file at <url> to a local file named <name>
     # @return  An array of help strings
     def getCommandHelp(self):
-        return commands.BaseCommandStructure._getCommandHelp(self.parsedCommands)
+        return commands.CommandHelper._getCommandHelp(self.parsedCommands)
 
     # Checks if the bot handles the command provided by the user
     # @param command  The command the user wants to execute
     # @return         Returns False if it can't handle it, True if it can
     def isCommand(self, command):
-        return commands.BaseCommandStructure._isCommand(self.parsedCommands, command)
+        return commands.CommandHelper._isCommand(self.parsedCommands, command)
 
     # Parses the args based on the command's settings
     # @param command  The command the user wants to execute
     # @param args     The remaining text, which will be parsed into args for execution
     # @return         Returns the parsed args in an array
     def parseCommandArgs(self, command, args):
-        return commands.BaseCommandStructure._parseCommandArgs(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
+        return commands.CommandHelper._parseCommandArgs(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
     
     # Executes the chat command
     # @param args       Any extra parameters that followed the command
     # @param kwargs     The information for the command
-    async def executeCommand(self, args, **kwargs):
-        await commands.BaseCommandStructure._executeCommand(self, self.parsedCommands, args, self.logger, **kwargs)
+    async def executeCommand(self, index, args, **kwargs):
+        await commands.CommandHelper._executeCommand(self, self.parsedCommands, index, args, self.logger, **kwargs)
 
     @styrobot.botcommand('Change the bot\'s avatar image. Url must be an PNG or JPG image.', name='changebotavatar', parserType=commands.ParamParserType.ALL)
     async def _changebotavatar_(self, channel, image_url, **kwargs):
@@ -111,16 +111,24 @@ class BotCommands:
         await self.bot.send_file(channel, 'images/f14.jpg')
 
     @styrobot.botcommand('Help has never been so unhelpful', name='halp')
-    async def _halp_(self, channel, plugin_name, **kwargs):
-        await self.getHelp(channel, plugin_name, True)
+    async def _halp_(self, channel, **kwargs):
+        await self.getHelp(channel, '', True)
+
+    @styrobot.botcommand('Help has never been so unhelpful', name='halp')
+    async def _halpPage_(self, channel, page_name, **kwargs):
+        await self.getHelp(channel, page_name, True)
 
     @styrobot.botcommand('Say Hello', name='hello')
     async def _hello_(self, channel, author, **kwargs):
         await self.bot.send_message(channel, 'Hello <@' + author.id + '>')
 
-    @styrobot.botcommand('Provides help for the bot and its plugins', name='help')
-    async def _help_(self, channel, plugin_name, **kwargs):
-        await self.getHelp(channel, plugin_name)
+    @styrobot.botcommand('Provides the basic help page', name='help')
+    async def _help_(self, channel, **kwargs):
+        await self.getHelp(channel, '')
+
+    @styrobot.botcommand('Provides the help page for a specific part of the bot or its plugins', name='help')
+    async def _helpPage_(self, channel, page_name, **kwargs):
+        await self.getHelp(channel, page_name)
 
     @styrobot.botcommand('Join voice channel with given name', name='join')
     async def _join_(self, server, channel, author, name, **kwargs):
@@ -149,20 +157,22 @@ class BotCommands:
                 await self.bot.send_message(channel, 'There is more than one channel with this name. Please use the correct capitalization to join a specific one.')
                 return
 
-        # Leave the current channel before joining (throws exception otherwise)
-        if self.voiceChannel is not None:
-            await self._leave_(channel, author, **kwargs)
+        await self._joinVoiceChannel(channel, author, chan, **kwargs)
 
-        self.logger.debug('[join]: Joining channel %s', chan)
-        self.voiceChannel = await self.bot.join_voice_channel(chan)
-        self.voiceStarter = author
+    @styrobot.botcommand('Join voice channel you are currently in', name='join')
+    async def _joinme_(self, server, channel, author, **kwargs):
+        chan = author.voice.voice_channel
 
-        for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
-            await plugin.plugin_object.onJoinVoiceChannel()
+        if chan is None:
+            self.logger.debug('[join]: You are not currently in a voice channel.')
+            await self.bot.send_message(channel, 'You are not currently in a voice channel.')
+            return
+
+        await self._joinVoiceChannel(channel, author, chan, **kwargs)
 
     @styrobot.botcommand('Leave the current voice channel', name='leave')
     async def _leave_(self, channel, author, **kwargs):
-        if author == self.voiceStarter or self.bot.isAdmin(message.author):
+        if author == self.voiceStarter or self.bot.isAdmin(author):
             for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
                 await plugin.plugin_object.onLeaveVoiceChannel()
 
@@ -199,7 +209,7 @@ class BotCommands:
 
 
     def getHelpBot(self):
-        helpStr = '__**Basic Commands:**__\n\n'
+        helpStr = '__**Basic Commands:**__\n'
         commands = self.getCommandHelp()
 
         for com in commands:
@@ -332,3 +342,16 @@ class BotCommands:
                 words[i] = ''.join(words[i])
 
         return ' '.join(words)
+
+    async def _joinVoiceChannel(self, channel, author, chan, **kwargs):
+        # Leave the current channel before joining (throws exception otherwise)
+        if self.voiceChannel is not None:
+            await self._leave_(channel, author, **kwargs)
+
+        self.logger.debug('[join]: Joining channel %s', chan)
+        self.voiceChannel = await self.bot.join_voice_channel(chan)
+        self.voiceStarter = author
+
+        for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
+            await plugin.plugin_object.onJoinVoiceChannel()
+

@@ -1,7 +1,7 @@
 import abc
 import logging
 import inspect
-from commands import CommandRegistry, ParamParserType, BaseCommandStructure
+from commands import CommandRegistry, ParamParserType, CommandHelper 
 
 class Plugin:
     __metaclass__ = abc.ABCMeta
@@ -31,7 +31,7 @@ class Plugin:
     # example: !file save <url> <name>  - Saves the file at <url> to a local file named <name>
     # @return  An array of help strings
     def getCommandHelp(self):
-        return BaseCommandStructure._getCommandHelp(self.parsedCommands, self.tag)
+        return CommandHelper._getCommandHelp(self.parsedCommands, self.tag)
 
     # Checks if this plugin handles the command provided by the user
     # @param tag      The tag which identifies the plugin (this could be their short tag)
@@ -42,17 +42,17 @@ class Plugin:
         if tag != self.tag and tag != self.shortTag:
             return False
 
-        return BaseCommandStructure._isCommand(self.parsedCommands, command)
+        return CommandHelper._isCommand(self.parsedCommands, command)
 
     def parseCommandArgs(self, command, args):
-        return BaseCommandStructure._parseCommandArgs(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
+        return CommandHelper._parseCommandArgs(self.parsedCommands, command, args, self.defaultParser, self.defaultParserType, self.logger)
 
     
     # Executes the chat command
     # @param args       Any extra parameters that followed the command
     # @param kwargs     The information for the command
-    async def executeCommand(self, args, **kwargs):
-        await BaseCommandStructure._executeCommand(self, self.parsedCommands, args, self.logger, **kwargs)
+    async def executeCommand(self, index, args, **kwargs):
+        await CommandHelper._executeCommand(self, self.parsedCommands, index, args, self.logger, **kwargs)
 
     # Whether or not this plugin wants to read messages completely
     # Override this if you want your plugin to read messages completely for something

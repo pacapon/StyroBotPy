@@ -16,13 +16,13 @@ class CommandRegistry():
     OVERRIDE_DEFAULT_PARSER = 'overrideDefaultParser'
     PARAM_PARSER = 'paramParser'
     PARAM_PARSER_TYPE = 'paramParserType'
-    PARAM_PARSER_SPACES = lambda args: args.split(' ')
+    PARAM_PARSER_SPACES = lambda args: [] if args.split(' ') == [''] else args.split(' ')
     PARAM_PARSER_ALL = lambda args: args
 
     def __init__(self):
         self.registry = {}
 
-class BaseCommandStructure:
+class CommandHelper:
     # Gets the help information for the commands provided in a nicely formatted string
     # Format 1 (bot commands):    !<commandname> <parameters>  - <description>
     # Format 2 (plugin commands): !<tag> <commandname> <parameters>  - <description>
@@ -35,17 +35,19 @@ class BaseCommandStructure:
         commands = []
 
         for key, value in commandList.items():
-            if tag is not None:
-                str = '`!{} {} '.format(tag, key)
-            else:
-                str = '`!{} '.format(key)
+            numOverloads = len(value[CommandRegistry.FUNCTION_NAME])
+            for i in range(numOverloads):
+                if tag is not None:
+                    str = '`!{} {} '.format(tag, key)
+                else:
+                    str = '`!{} '.format(key)
         
-            if len(value[CommandRegistry.PARAM_NAMES]) != 0:
-                for paramName in value[CommandRegistry.PARAM_NAMES]:
-                    str += '<{}> '.format(paramName)
+                if len(value[CommandRegistry.PARAM_NAMES][i]) != 0:
+                    for paramName in value[CommandRegistry.PARAM_NAMES][i]:
+                        str += '<{}> '.format(paramName)
 
-            str += '`  - {}'.format(value[CommandRegistry.DESCRIPTION])
-            commands.append(str)
+                str += '`  - {}'.format(value[CommandRegistry.DESCRIPTION][i])
+                commands.append(str)
 
         return commands
 
@@ -68,7 +70,7 @@ class BaseCommandStructure:
         if command in commandList:
             cmd = commandList[command]
 
-            num = int(cmd[CommandRegistry.NUM_PARAMS])
+            numParams = cmd[CommandRegistry.NUM_PARAMS]
             temp = defaultParser(args)
             parserType = defaultParserType 
                 
@@ -80,20 +82,31 @@ class BaseCommandStructure:
                 logger.debug('Command [%s] Parsed', command)
                 logger.debug('ParserType: %s', parserType)
 
-            # Break out early if no params
-            if num == 0:
-                if logger is not None: logger.debug('Args: []')
-                return []
-
             # Break out early if we want all the arguments as a parameter
-            if parserType == ParamParserType.ALL:
+            if len(numParams) == 1 and parserType == ParamParserType.ALL:
                 if logger is not None: logger.debug('Args: [%s]', temp)
-                return [temp]
+                return 0, [temp]
 
-            if logger is not None: logger.debug('Args: %s', temp[:num])
-            return temp[:num]
+            # Determine which function to call based on the number of parameters
+            numParsedParams = len(temp)
+            index = -1
 
-        return False
+            for i, item in enumerate(numParams):
+                if item == numParsedParams:
+                    index = i
+                    break
+
+            if index != -1:
+                num = int(numParams[index])
+                # Break out early if no params
+                if num == 0:
+                    if logger is not None: logger.debug('Args: []')
+                    return index, []
+
+                if logger is not None: logger.debug('Args: %s', temp[:num])
+                return index, temp[:num]
+
+        return -1, [] 
 
     # Executes the command
     # @param obj            The object that has the function for the command being called
@@ -101,11 +114,15 @@ class BaseCommandStructure:
     # @param args           Any extra parameters that followed the command
     # @param logger         The logger to use (not required)
     # @param kwargs         The information for the command
-    async def _executeCommand(obj, commandList, args, logger = None, **kwargs):
+    async def _executeCommand(obj, commandList, index, args, logger = None, **kwargs):
         command = kwargs.pop('command')
-        num = commandList[command][CommandRegistry.NUM_PARAMS]
-        paramNames = commandList[command][CommandRegistry.PARAM_NAMES]
-        funcName = commandList[command][CommandRegistry.FUNCTION_NAME]
+
+        if index == -1 or index >= len(commandList[command][CommandRegistry.NUM_PARAMS]):
+            if logger is not None: logger.error('The index (%i) provided is invalid.', index)
+
+        num = commandList[command][CommandRegistry.NUM_PARAMS][index]
+        paramNames = commandList[command][CommandRegistry.PARAM_NAMES][index]
+        funcName = commandList[command][CommandRegistry.FUNCTION_NAME][index]
 
         if len(args) != len(paramNames):
             if logger is not None: logger.error('The number of arguments (%s) and the number of parameter names (%s) does not match!', len(args), len(paramNames))
@@ -152,13 +169,29 @@ def _loadCommands():
             if commandName not in commandRegistry.registry[className]:
                 commandRegistry.registry[className][commandName] = {}
 
-            commandRegistry.registry[className][commandName][CommandRegistry.FUNCTION_NAME] = funcName
-            commandRegistry.registry[className][commandName][CommandRegistry.NUM_PARAMS] = len(params) 
-            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_NAMES] = params 
-            commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION] = description 
-            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
-            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = CommandRegistry.PARAM_PARSER_SPACES
-            commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = False
+            if CommandRegistry.FUNCTION_NAME not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.FUNCTION_NAME] = []
+
+            if CommandRegistry.NUM_PARAMS not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.NUM_PARAMS] = []
+
+            if CommandRegistry.PARAM_NAMES not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.PARAM_NAMES] = []
+
+            if CommandRegistry.DESCRIPTION not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION] = []
+
+            if CommandRegistry.PARAM_PARSER_TYPE not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
+                commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = False
+
+            if CommandRegistry.PARAM_PARSER not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = CommandRegistry.PARAM_PARSER_SPACES
+
+            commandRegistry.registry[className][commandName][CommandRegistry.FUNCTION_NAME].append(funcName)
+            commandRegistry.registry[className][commandName][CommandRegistry.NUM_PARAMS].append(len(params))
+            commandRegistry.registry[className][commandName][CommandRegistry.PARAM_NAMES].append(params)
+            commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION].append(description)
 
             if 'parser' in kwargs:
                 commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = kwargs['parser']

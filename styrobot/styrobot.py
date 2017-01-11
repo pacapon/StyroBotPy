@@ -125,6 +125,7 @@ class Bot(discord.Client):
         tag = None
         command = None
         args = None
+        index = None
 
         # If we have a command, extract the command and parameters (if any)
         if message.content.startswith('!'):
@@ -138,9 +139,13 @@ class Bot(discord.Client):
 
             # If we have a bot command, execute it
             if self.isBotCommand(tmp[0]):
-                args = self.botCommands.parseCommandArgs(tmp[0], content)
+                index, args = self.botCommands.parseCommandArgs(tmp[0], content)
 
-                await self.botCommands.executeCommand(args, command=tmp[0], server=message.server, channel=message.channel, author=message.author)
+                if index == -1:
+                    await self.send_message(message.channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust Type: !help bot'.format(tmp[0]))
+                    return
+
+                await self.botCommands.executeCommand(index, args, command=tmp[0], server=message.server, channel=message.channel, author=message.author)
                 return
             # This isn't a bot command and there was nothing after it. This must be an unrecognized command.
             elif content == '':
@@ -174,9 +179,13 @@ class Bot(discord.Client):
 
             # Check if a plugin can handle the command and execute it if they can
             if tag != None and command != None and plugin.plugin_object.isCommand(tag, command):
-                temp = plugin.plugin_object.parseCommandArgs(command, args)
+                index, temp = plugin.plugin_object.parseCommandArgs(command, args)
 
-                await plugin.plugin_object.executeCommand(temp, command=command, server=message.server, channel=message.channel, author=message.author) 
+                if index == -1:
+                    await self.send_message(message.channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust type: !help {}'.format(tmp[0], tag))
+                    return
+
+                await plugin.plugin_object.executeCommand(index, temp, command=command, server=message.server, channel=message.channel, author=message.author) 
                 found = True
 
         if not found and message.content.startswith('!'):
