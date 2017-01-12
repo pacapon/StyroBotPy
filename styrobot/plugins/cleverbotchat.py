@@ -10,6 +10,12 @@ class CleverBotChat(Plugin):
         self.tag = 'cleverbot'
         self.shortTag = 'cb'
 
+    def isReadingMessages(self):
+        return True
+
+    async def readMessage(self, message):
+        pass
+
     @styrobot.plugincommand('Sends a message to CleverBot', name='chat', parserType=commands.ParamParserType.ALL)
     async def _chat_(self, server, channel, author, text):
         self.logger.debug('[chat] [%s]: %s', author, text)
