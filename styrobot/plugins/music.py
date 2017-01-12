@@ -148,6 +148,8 @@ class Music(Plugin):
             await self.bot.send_message(channel, 'No songs to display.')
             return
 
+        sorted(songFiles)
+
         for song in songFiles:
             library += song
             library += '\n'
