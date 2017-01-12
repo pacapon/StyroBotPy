@@ -33,6 +33,7 @@ class CommandHelper:
     # @return  An array of help strings
     def _getCommandHelp(commandList, tag = None):
         commands = []
+        overloads = {}
 
         for key, value in commandList.items():
             numOverloads = len(value[CommandRegistry.FUNCTION_NAME])
@@ -41,6 +42,9 @@ class CommandHelper:
                     str = '`!{} {} '.format(tag, key)
                 else:
                     str = '`!{} '.format(key)
+                
+                if numOverloads > 1:
+                    overloads[key] = numOverloads
         
                 if len(value[CommandRegistry.PARAM_NAMES][i]) != 0:
                     for paramName in value[CommandRegistry.PARAM_NAMES][i]:
@@ -48,6 +52,18 @@ class CommandHelper:
 
                 str += '`  - {}'.format(value[CommandRegistry.DESCRIPTION][i])
                 commands.append(str)
+
+        # Sort the commands
+        commands = sorted(commands)
+
+        commandPrefix = '!' + (tag + ' ') if tag is not None else ''
+
+        # We need to do a reverse sort on all the overloaded functions because they aren't
+        # in the order we want them to be
+        for key, value in overloads.items():
+            index = next(i for i, item in enumerate(commands) if commandPrefix + key in item)
+
+            commands[index:index+value] = sorted(commands[index:index+value], reverse=True)
 
         return commands
 
