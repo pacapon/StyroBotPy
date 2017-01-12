@@ -412,7 +412,18 @@ class Meme(Plugin):
             }
         )
 
-        f = urllib.request.urlopen(request)
+        self.logger.debug('Attempting to do API call to memegen')
+
+        f = None
+        try:
+            f = urllib.request.urlopen(request)
+        except urllib.error.HTTPError as ex:
+            await self.bot.send_message(channel, 'Something seems to have gone wrong while creating the meme, please try again. If it continues to fail, try waiting a few minutes.')
+            self.logger.debug('API call to memegen has failed with error: %s', ex)
+            return
+
+        self.logger.debug('API call to memegen has succeeded')
+
         filename = 'images/' + str(uuid.uuid1()) + '.jpg'
         output = open(filename, 'wb')
         output.write(f.read())
