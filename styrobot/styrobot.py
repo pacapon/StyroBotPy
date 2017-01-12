@@ -24,6 +24,8 @@ class Bot(discord.Client):
         super().__init__()
 
         self.settingsChannelName = 'botsettings' # change this if you want your bot settings channel to have a different name
+        self.voiceChannel = None
+        self.voiceStarter = None
 
         self.botCommands = botcommands.BotCommands()
 
@@ -97,8 +99,8 @@ class Bot(discord.Client):
             await plugin.plugin_object.shutdown()
             logger.debug('Shutdown %s', plugin.name)
 
-        if self.botCommands.voiceChannel != None:
-            await self.botCommands.voiceChannel.disconnect()
+        if self.voiceChannel != None:
+            await self.voiceChannel.disconnect()
 
     async def on_ready(self):
         print('Logged in as')

@@ -14,8 +14,6 @@ class BotCommands:
         self.defaultParser = commands.CommandRegistry.PARAM_PARSER_SPACES
         self.logger = logging.getLogger('styrobot.BotCommands')
         self.bot = bot
-        self.voiceChannel = None
-        self.voiceStarter = None
 
         self.logger.debug('Plugin Class: %s', self.__class__.__name__)
         self.logger.debug('Commands: %s', str(self.parsedCommands))
@@ -172,14 +170,14 @@ class BotCommands:
 
     @styrobot.botcommand('Leave the current voice channel', name='leave')
     async def _leave_(self, channel, author, **kwargs):
-        if author == self.voiceStarter or self.bot.isAdmin(author):
+        if author == self.bot.voiceStarter or self.bot.isAdmin(author):
             for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
                 await plugin.plugin_object.onLeaveVoiceChannel()
 
-            self.logger.debug('[leave]: Leaving voice channel %s', self.voiceChannel.channel.name)
-            await self.voiceChannel.disconnect()
-            self.voiceChannel = None
-            self.voiceStarter = None
+            self.logger.debug('[leave]: Leaving voice channel %s', self.bot.voiceChannel.channel.name)
+            await self.bot.voiceChannel.disconnect()
+            self.bot.voiceChannel = None
+            self.bot.voiceStarter = None
             return
 
         self.logger.debug('[leave]: You do not have permission to do that. You must be an admin or the person who did the join command.')
@@ -345,12 +343,12 @@ class BotCommands:
 
     async def _joinVoiceChannel(self, channel, author, chan, **kwargs):
         # Leave the current channel before joining (throws exception otherwise)
-        if self.voiceChannel is not None:
+        if self.bot.voiceChannel is not None:
             await self._leave_(channel, author, **kwargs)
 
         self.logger.debug('[join]: Joining channel %s', chan)
-        self.voiceChannel = await self.bot.join_voice_channel(chan)
-        self.voiceStarter = author
+        self.bot.voiceChannel = await self.bot.join_voice_channel(chan)
+        self.bot.voiceStarter = author
 
         for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
             await plugin.plugin_object.onJoinVoiceChannel()
