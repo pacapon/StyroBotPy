@@ -124,14 +124,18 @@ class Bot(discord.Client):
         if message.author == self.user:
             return
 
-        tag = None
-        command = None
-        args = None
-        index = None
+        if not await self._executeBotCommand(message.content, message.server, message.channel, message.author):
+            await self._readMessage(message)
+
+            if not await self._checkForCommandCollisions(message.content, message.channel):
+                await self._executePluginCommand(message.content, message.server, message.channel, message.author)
+
+    def _parseTextForCommandInfo(self, text):
+        results = {}
 
         # If we have a command, extract the command and parameters (if any)
-        if message.content.startswith('!'):
-            tmp = message.content.split(' ', 1)
+        if text.startswith('!'):
+            tmp = text.split(' ', 1)
             tmp[0] = tmp[0][1:] # get rid of !
             content = ''
 
@@ -139,59 +143,87 @@ class Bot(discord.Client):
             if len(tmp) > 1:
                 content = tmp[1]
 
+            results['tag'] = tmp[0]
+            results['content'] = content
+
+            tmp = content.split(' ', 1)
+            results['command'] = tmp[0]
+
+            if len(tmp) > 1:
+                results['args'] = tmp[1]
+            else:
+                results['args'] = ''
+
+            return results
+
+        return None
+
+    async def _executeBotCommand(self, text, _server, _channel, _author, **kwargs):
+        commandInfo = self._parseTextForCommandInfo(text)
+
+        if commandInfo is not None:
+            tag = commandInfo['tag']
+            content = commandInfo['content']
+
             # If we have a bot command, execute it
-            if self.isBotCommand(tmp[0]):
-                index, args = self.botCommands.parseCommandArgs(tmp[0], content)
+            if self.isBotCommand(tag):
+                index, args = self.botCommands.parseCommandArgs(tag, content)
 
                 if index == -1:
-                    await self.send_message(message.channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust Type: !help bot'.format(tmp[0]))
-                    return
+                    await self.send_message(_channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust Type: !help bot'.format(tag))
+                    return True
 
-                await self.botCommands.executeCommand(index, args, command=tmp[0], server=message.server, channel=message.channel, author=message.author)
-                return
+                await self.botCommands.executeCommand(index, args, **kwargs, command=tag, server=_server, channel=_channel, author=_author)
+                return True
             # This isn't a bot command and there was nothing after it. This must be an unrecognized command.
             elif content == '':
-                await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
-                return
-            # Otherwise, assume it is a plugin command
-            else:
-                tag = tmp[0]
-                tmp = content.split(' ', 1)
-                command = tmp[0]
+                await self.send_message(_channel, 'That is not a recognized command. For help, please try !help')
+                return True
 
-                if len(tmp) > 1:
-                    args = tmp[1]
-                else:
-                    args = ''
- 
+        # Otherwise, assume it is a plugin command
+        return False
+
+    async def _checkForCommandCollisions(self, text, channel):
         # Check for tag/command collisions here and resolve before letting the plugins handle it
         for key, array in self.commandCollisions.items():
             for value in array:
-                if message.content.startswith('!' + key + ' ' + value):
+                if text.startswith('!' + key + ' ' + value):
                     logger.debug('There is more than one plugin with this short tag and command combination. Please use the full tag.')
-                    await self.send_message(message.channel, 'There is more than one plugin with this short tag and command combination. Please use the full tag.')
-                    return
+                    await self.send_message(channel, 'There is more than one plugin with this short tag and command combination. Please use the full tag.')
+                    return True
 
-        found = False
-        # Go through each of the plugins and see if they can execute the command
+        return False
+
+    async def _readMessage(self, message):
+        # Go through each of the plugins and let them read the message
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            # Let the plugin read the message
             if plugin.plugin_object.isReadingMessages():
                 await plugin.plugin_object.readMessage(message)
 
-            # Check if a plugin can handle the command and execute it if they can
-            if tag != None and command != None and plugin.plugin_object.isCommand(tag, command):
-                index, temp = plugin.plugin_object.parseCommandArgs(command, args)
+    async def _executePluginCommand(self, text, _server, _channel, _author, **kwargs):
+        commandInfo = self._parseTextForCommandInfo(text)
 
-                if index == -1:
-                    await self.send_message(message.channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust type: !help {}'.format(tmp[0], tag))
-                    return
+        if commandInfo is not None:
+            tag = commandInfo['tag']
+            command = commandInfo['command']
+            args = commandInfo['args']
 
-                await plugin.plugin_object.executeCommand(index, temp, command=command, server=message.server, channel=message.channel, author=message.author) 
-                found = True
+            found = False
+            # Go through each of the plugins and see if they can execute the command
+            for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
+                # Check if a plugin can handle the command and execute it if they can
+                if tag != None and command != None and plugin.plugin_object.isCommand(tag, command):
+                    index, temp = plugin.plugin_object.parseCommandArgs(command, args)
 
-        if not found and message.content.startswith('!'):
-            await self.send_message(message.channel, 'That is not a recognized command. For help, please try !help')
+                    if index == -1:
+                        await self.send_message(_channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust type: !help {}'.format(command, tag))
+                        return
+
+                    await plugin.plugin_object.executeCommand(index, temp, command=command, server=_server, channel=_channel, author=_author, **kwargs) 
+                    found = True
+
+            if not found and text.startswith('!'):
+                await self.send_message(_channel, 'That is not a recognized command. For help, please try !help')
 
     def download_image(self, imgUrl, filename):
         try:
@@ -375,6 +407,23 @@ class Bot(discord.Client):
 
         logger.debug('The bot is not part of server %s!', server)
         return False
+
+    # Returns the user's object if it exists. The username can be their discord name or server nickname
+    def getUserFromName(self, server, username):
+        user = None
+
+        for member in server.members:
+            if member.display_name == username:
+                user = member
+                break
+
+        if not user:
+            user = discord.utils.get(server.members, name=username)
+
+        if not user:
+            return None
+
+        return user
 
 if __name__ == "__main__":
 

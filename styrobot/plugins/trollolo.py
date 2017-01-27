@@ -16,26 +16,62 @@ class Trollolo(Plugin):
         if not os.path.exists('troll'):
             os.makedirs('troll')
 
-    @styrobot.plugincommand('Rick Rolls the person by sending them the video privately', name='rickroll', parserType=commands.ParamParserType.ALL)
-    async def _rickroll_(self, server, channel, author, username):
-        user = None
+    def _sendParser(args):
+        firstSpace = args.find(' ')
+        firstColon = args.find(':')
 
-        for member in server.members:
-            if member.display_name == username:
-                user = member
-                break
+        if firstColon is -1:
+            return []
 
-        if not user:
-            user = discord.utils.get(server.members, name=username)
+        result = []
 
-        if user:
-            self.logger.debug('Rick Rolling %s', user)
-            await self.bot.send_message(user, '<https://www.youtube.com/watch?v=dQw4w9WgXcQ>')
+        # Parse for command args and user
+        if firstSpace < firstColon and firstSpace is not -1:
+            tmp = args.split(' ', 1)
+
+            result.append(tmp[0])
+
+            tmp = tmp[1].split(':', 1)
+            result.append(tmp[0])
+            result.append(tmp[1])
+
+        # Parse just for command and user
         else:
-            self.logger.debug('There is no user with this name.')
-            await self.bot.send_message(channel, 'There is no user with this name.')
+            tmp = args.split(':', 1)
+            result.append(tmp[0])
+            result.append('')
+            result.append(tmp[1])
 
-    async def playTroll(self, server, channel, url, filename):
+        return result
+
+    @styrobot.plugincommand('Sends the troll <command> with <args> (if any) directly to <user>.', name='send', parser=_sendParser)
+    async def _send_(self, server, channel, author, command, args, user, **kwargs):
+        """
+           !troll send isengard:Nick Cage
+           !troll send numberone runescape:Nick Cage
+        """
+        if command in self.parsedCommands:
+            self.logger.debug('[send]: Command {} is valid, checking on user.'.format(command))
+            _userid = self.bot.getUserFromName(server, user)
+
+            if _userid is not None:
+                commandStr = '!{} {}{}'.format(self.tag, command, '' if args is '' else ' ' + args)
+                self.logger.debug('[send]: User {} is valid, executing command: {}'.format(_userid, commandStr))
+                await self.bot._executePluginCommand(commandStr, server, channel, author, userid=_userid)
+            else:
+                self.logger.debug('[send]: There is no user with that name or nickname.')
+                await self.bot.send_message(channel, 'There is no user with that name or nickname.')
+
+        else:
+            self.logger.debug('[send]: That is not a valid command.')
+            await self.bot.send_message(channel, 'That is not a valid command.')
+
+    async def playTroll(self, server, channel, url, filename, **kwargs):
+        if 'userid' in kwargs:
+            self.logger.debug('Sending {} to {}'.format(filename, kwargs['userid']))
+            await self.bot.send_message(kwargs['userid'], '<{}>'.format(url))
+            return
+
         if self.bot.is_voice_connected(server):
             if not os.path.isfile('troll/' + filename + '.mp3'):
                 self.dl_song(url, filename)
@@ -48,33 +84,33 @@ class Trollolo(Plugin):
 
         await self.bot.send_message(channel, url)
 
-    @styrobot.plugincommand('Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!', name='nevergonna')
-    async def _nevergonna_(self, server, channel, author):
+    @styrobot.plugincommand('Never gonna give you up! Never gonna let you down! Never gonna run around and desert you!', name='rickroll')
+    async def _rickroll_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-        await self.playTroll(server, channel, url, 'nevergonna')
+        await self.playTroll(server, channel, url, 'rickroll', **kwargs)
 
     @styrobot.plugincommand('Saruman has never sounded more beautiful', name='trololo')
-    async def _trololo_(self, server, channel, author):
+    async def _trololo_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=KaqC5FnvAEc'
-        await self.playTroll(server, channel, url, 'trololo')
+        await self.playTroll(server, channel, url, 'trololo', **kwargs)
 
     @styrobot.plugincommand('They are taking the hobbits to isengardgardgardgagagagard', name='isengard')
-    async def _isengard_(self, server, channel, author):
+    async def _isengard_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=uE-1RPDqJAY'
-        await self.playTroll(server, channel, url, 'isengard')
+        await self.playTroll(server, channel, url, 'isengard', **kwargs)
 
     @styrobot.plugincommand('And I said heyeayeayeayea! heyeayea! I said hey! What\'s going on?', name='heyeayea')
-    async def _heyeayea_(self, server, channel, author):
+    async def _heyeayea_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=ZZ5LpwO-An4'
-        await self.playTroll(server, channel, url, 'heyeayea')
+        await self.playTroll(server, channel, url, 'heyeayea', **kwargs)
 
     @styrobot.plugincommand('Nyan nyan nyan', name='nyan')
-    async def _nyan_(self, server, channel, author):
+    async def _nyan_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=QH2-TGUlwu4'
-        await self.playTroll(server, channel, url, 'nyan')
+        await self.playTroll(server, channel, url, 'nyan', **kwargs)
 
     @styrobot.plugincommand('*queues sax music*  We are number one! Hey!\nAvailable versions: original, runescape, synthwave, soviet', name='numberone')
-    async def _numberone_(self, server, channel, author, version):
+    async def _numberone_(self, server, channel, author, version, **kwargs):
         url = ''
         name = ''
 
@@ -95,42 +131,42 @@ class Trollolo(Plugin):
             await self.bot.send_message(channel, 'The version you provided is invalid.')
             return
 
-        await self.playTroll(server, channel, url, name)
+        await self.playTroll(server, channel, url, name, **kwargs)
 
     @styrobot.plugincommand('Yar har fiddle dee dee, being a pirate is alright with me! Do what you want cause a pirate is free, you are a pirate!', name='pirate')
-    async def _pirate_(self, server, channel, author):
+    async def _pirate_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=i8ju_10NkGY'
-        await self.playTroll(server, channel, url, 'pirate')
+        await self.playTroll(server, channel, url, 'pirate', **kwargs)
 
     @styrobot.plugincommand('Yeeeeeeeeeeeee', name='yeee')
-    async def _yeee_(self, server, channel, author):
+    async def _yeee_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=q6EoRBvdVPQ'
-        await self.playTroll(server, channel, url, 'yeee')
+        await self.playTroll(server, channel, url, 'yeee', **kwargs)
 
     @styrobot.plugincommand('Impressive... Most impressive.', name='impressive')
-    async def _impressive_(self, server, channel, author):
+    async def _impressive_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=bTlXZf5qsZI'
-        await self.playTroll(server, channel, url, 'impressive')
+        await self.playTroll(server, channel, url, 'impressive', **kwargs)
 
     @styrobot.plugincommand('Power!!!!! **UNLIMITED POWER!!!!**', name='power')
-    async def _power_(self, server, channel, author):
+    async def _power_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=0D8i8QGgz0k'
-        await self.playTroll(server, channel, url, 'power')
+        await self.playTroll(server, channel, url, 'power', **kwargs)
 
     @styrobot.plugincommand('Goood anakin, goooodd', name='goodanakin')
-    async def _goodanakin_(self, server, channel, author):
+    async def _goodanakin_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=VdFoAi_f30Q'
-        await self.playTroll(server, channel, url, 'goodanakin')
+        await self.playTroll(server, channel, url, 'goodanakin', **kwargs)
 
     @styrobot.plugincommand('If the baggins loses, we eats it whole!', name='eatsitwhole')
-    async def _eatsitwhole_(self, server, channel, author):
+    async def _eatsitwhole_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=rV73aShBFgs'
-        await self.playTroll(server, channel, url, 'eatsitwhole')
+        await self.playTroll(server, channel, url, 'eatsitwhole', **kwargs)
 
     @styrobot.plugincommand('We\'ve had one, yes, but what about second breakfast?', name='secondbreakfast')
-    async def _secondbreakfast_(self, server, channel, author):
+    async def _secondbreakfast_(self, server, channel, author, **kwargs):
         url = 'https://www.youtube.com/watch?v=XkzvHtjnNOs'
-        await self.playTroll(server, channel, url, 'secondbreakfast')
+        await self.playTroll(server, channel, url, 'secondbreakfast', **kwargs)
 
     def dl_song(self, url, name):
         video = pafy.new(url)

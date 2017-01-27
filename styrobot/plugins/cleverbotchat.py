@@ -7,7 +7,7 @@ import re
 
 class CleverBotChat(Plugin):
     async def initialize(self, bot):
-        self.cb = cleverbot.Cleverbot()
+        self.cb = cleverbot.Cleverbot('styrobot.py')
         self.tag = 'cleverbot'
         self.shortTag = 'cb'
 
