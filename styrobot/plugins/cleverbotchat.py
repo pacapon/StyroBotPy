@@ -15,7 +15,7 @@ class CleverBotChat(Plugin):
         return True
 
     async def readMessage(self, message):
-        if message.server.me in message.mentions: 
+        if message.server.me in message.mentions:
             if len(message.mentions) == 1:
                 self.logger.debug('[readMessage]: Mention of bot is found. Parsing all text after mention in message and sending to cleverbot.')
 
@@ -31,6 +31,9 @@ class CleverBotChat(Plugin):
 
     @styrobot.plugincommand('Sends a message to CleverBot', name='chat', parserType=commands.ParamParserType.ALL)
     async def _chat_(self, server, channel, author, text):
+        """
+           !cleverbot chat <text>
+        """
         self.logger.debug('[chat] [%s]: %s', author, text)
         response = self.cb.ask(text)
         self.logger.debug('[chat] [cleverbot]: %s', response)
@@ -42,4 +45,3 @@ class CleverBotChat(Plugin):
         self.logger.debug('Scrubbed message: %s', ''.join(scrubbedMessage).lower())
 
         return ''.join(scrubbedMessage).lower()
-

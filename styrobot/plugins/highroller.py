@@ -4,7 +4,7 @@ import logging
 import styrobot
 
 class HighRoller(Plugin):
-    
+
     async def initialize(self, bot):
         self.callFlip = {}
         self.tag = 'highroller'
@@ -12,6 +12,9 @@ class HighRoller(Plugin):
 
     @styrobot.plugincommand('Rolls a dice of size <number>', name='roll')
     async def _roll_(self, server, channel, author, number):
+        """
+           !highroller roll [number]
+        """
         if self.isNumber(number) and int(number) > 0:
             result = self.rollDice(int(number))
 
@@ -23,6 +26,10 @@ class HighRoller(Plugin):
 
     @styrobot.plugincommand('Call the next coinflip (Heads or Tails)', name='callflip')
     async def _callflip_(self, server, channel, author, name):
+        """
+           !highroller callflip Heads
+           !highroller callflip Tails
+        """
         firstWord = name.lower()
 
         if firstWord == 'head' or firstWord == 'heads':
@@ -50,14 +57,14 @@ class HighRoller(Plugin):
                         message = 'It is a tie between <@' + p1id + '> and <@' + value[1] + '>!'
                         logmessage = 'It is a tie between ' + p1name + ' and ' + key + '!'
                     elif result == p1call and result != value[0]:
-                        message = '<@' + p1id + '> wins the coin flip!' 
-                        logmessage = p1name + ' wins the coin flip!' 
+                        message = '<@' + p1id + '> wins the coin flip!'
+                        logmessage = p1name + ' wins the coin flip!'
                     elif result == value[0] and result != p1call:
-                        message = '<@' + value[1] + '> wins the coin flip!' 
-                        logmessage = key + ' wins the coin flip!' 
+                        message = '<@' + value[1] + '> wins the coin flip!'
+                        logmessage = key + ' wins the coin flip!'
                     else:
                         message = 'Nobody wins the coin flip!'
-                            
+
                     break
 
             self.callFlip = {}
@@ -66,9 +73,12 @@ class HighRoller(Plugin):
 
     @styrobot.plugincommand('Flips a coin', name='flipcoin')
     async def _flipcoin_(self, server, channel, author):
+        """
+           !highroller flipcoin
+        """
         result = self.flipCoin()
         self.logger.debug('[flipcoin]: %s!', result)
-        await self.bot.send_message(channel, result + '!'); 
+        await self.bot.send_message(channel, result + '!');
 
     def rollDice(self, num):
         return random.randint(1, num)
