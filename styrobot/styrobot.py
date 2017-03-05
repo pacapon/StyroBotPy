@@ -54,7 +54,8 @@ class Bot(discord.Client):
         self.pluginManager.locatePlugins()
         self.pluginManager.loadPlugins()
 
-        logger.debug('Registry: %s', str(plugincommand.registry))
+        # Uncomment to see full command registry logged  WARNING: There is a lot of text
+        #logger.debug('Registry: %s', str(plugincommand.registry))
 
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Give the plugin it's dictionary of commands (so it doesn't need to lookup later)
@@ -170,14 +171,14 @@ class Bot(discord.Client):
                 index, args = self.botCommands.parseCommandArgs(tag, content)
 
                 if index == -1:
-                    await self.send_message(_channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust Type: !help bot'.format(tag))
+                    await self.send_message(_channel, 'Incorrect use of command `{}`. Please see the usage to learn how to properly use this command.\nJust Type: `!usage {}`'.format(tag, tag))
                     return True
 
                 await self.botCommands.executeCommand(index, args, **kwargs, command=tag, server=_server, channel=_channel, author=_author)
                 return True
             # This isn't a bot command and there was nothing after it. This must be an unrecognized command.
             elif content == '':
-                await self.send_message(_channel, 'That is not a recognized command. For help, please try !help')
+                await self.send_message(_channel, 'That is not a recognized command. For help, please try `!help`')
                 return True
 
         # Otherwise, assume it is a plugin command
@@ -214,16 +215,17 @@ class Bot(discord.Client):
                 # Check if a plugin can handle the command and execute it if they can
                 if tag != None and command != None and plugin.plugin_object.isCommand(tag, command):
                     index, temp = plugin.plugin_object.parseCommandArgs(command, args)
+                    tag = plugin.plugin_object.tag # Update the tag for better feedback
 
                     if index == -1:
-                        await self.send_message(_channel, 'Incorrect use of command <{}>. Please see the help page to learn how to properly use this command.\nJust type: !help {}'.format(command, tag))
+                        await self.send_message(_channel, 'Incorrect use of command `{}`. Please see the usage to learn how to properly use this command.\nJust type: `!usage {} {}`'.format(command, tag, command))
                         return
 
                     await plugin.plugin_object.executeCommand(index, temp, command=command, server=_server, channel=_channel, author=_author, **kwargs) 
                     found = True
 
             if not found and text.startswith('!'):
-                await self.send_message(_channel, 'That is not a recognized command. For help, please try !help')
+                await self.send_message(_channel, 'That is not a recognized command. For help, please try `!help`')
 
     def download_image(self, imgUrl, filename):
         try:

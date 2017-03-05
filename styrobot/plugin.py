@@ -18,8 +18,9 @@ class Plugin:
 
         await self.initialize(bot)
         
-        self.logger.debug('Plugin Class: %s', self.__class__.__name__)
-        self.logger.debug('Commands: %s', str(self.parsedCommands))
+        # Uncomment to see full command registry for this plugin  WARNING: There is a lot of text
+        #self.logger.debug('Plugin Class: %s', self.__class__.__name__)
+        #self.logger.debug('Commands: %s', str(self.parsedCommands))
 
     # Initializes the plugin
     # @param bot  A reference to the bot's instance

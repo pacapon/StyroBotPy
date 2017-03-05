@@ -1,5 +1,6 @@
 import inspect
 import enum
+import sys
 
 class ParamParserType(enum.Enum):
     SPACES = 'SPACES'
@@ -16,6 +17,8 @@ class CommandRegistry():
     OVERRIDE_DEFAULT_PARSER = 'overrideDefaultParser'
     PARAM_PARSER = 'paramParser'
     PARAM_PARSER_TYPE = 'paramParserType'
+    USAGE = 'usage'
+    
     PARAM_PARSER_SPACES = lambda args: [] if args.split(' ') == [''] else args.split(' ')
     PARAM_PARSER_ALL = lambda args: args
 
@@ -149,6 +152,35 @@ class CommandHelper:
         if logger is not None: logger.debug('Executing command [%s] with arguments [%s]', command, str(args)[1:-1])
         await getattr(obj, funcName)(**kwargs)
 
+    def _trim_docstring(docstring):	
+        if not docstring:
+            return ''
+
+        # Convert tabs to spaces (following the normal Python rules)
+        # and split into a list of lines:
+        lines = docstring.expandtabs().splitlines()
+
+        # Determine minimum indentation (first line doesn't count):
+        indent = sys.maxsize
+        for line in lines[1:]:
+            stripped = line.lstrip()
+            if stripped:
+                indent = min(indent, len(line) - len(stripped))
+
+        # Remove indentation (first line is special):
+        trimmed = [lines[0].strip()]
+        if indent < sys.maxsize:
+            for line in lines[1:]:
+                trimmed.append(line[indent:].rstrip())
+
+        # Strip off trailing and leading blank lines:
+        while trimmed and not trimmed[-1]:
+            trimmed.pop()
+        while trimmed and not trimmed[0]:
+            trimmed.pop(0)
+
+        # Return a single string:
+        return '\n'.join(trimmed)
 
 # Reference for auto registering decorated functions for a class
 # http://stackoverflow.com/questions/3054372/auto-register-class-methods-using-decorator
@@ -163,6 +195,7 @@ def _loadCommands():
             className = func.__qualname__.split('.', 1)[0]
             funcName = func.__name__
             commandName = kwargs[CommandRegistry.COMMAND_NAME] if CommandRegistry.COMMAND_NAME in kwargs else funcName
+            usage = CommandHelper._trim_docstring(func.__doc__)
             params = []
 
             for i, key in enumerate(inspect.signature(func).parameters):
@@ -197,6 +230,9 @@ def _loadCommands():
             if CommandRegistry.DESCRIPTION not in commandRegistry.registry[className][commandName]:
                 commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION] = []
 
+            if CommandRegistry.USAGE not in commandRegistry.registry[className][commandName]:
+                commandRegistry.registry[className][commandName][CommandRegistry.USAGE] = []
+
             if CommandRegistry.PARAM_PARSER_TYPE not in commandRegistry.registry[className][commandName]:
                 commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER_TYPE] = ParamParserType.SPACES
                 commandRegistry.registry[className][commandName][CommandRegistry.OVERRIDE_DEFAULT_PARSER] = False
@@ -208,6 +244,7 @@ def _loadCommands():
             commandRegistry.registry[className][commandName][CommandRegistry.NUM_PARAMS].append(len(params))
             commandRegistry.registry[className][commandName][CommandRegistry.PARAM_NAMES].append(params)
             commandRegistry.registry[className][commandName][CommandRegistry.DESCRIPTION].append(description)
+            commandRegistry.registry[className][commandName][CommandRegistry.USAGE].append(usage)
 
             if 'parser' in kwargs:
                 commandRegistry.registry[className][commandName][CommandRegistry.PARAM_PARSER] = kwargs['parser']
