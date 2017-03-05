@@ -47,6 +47,12 @@ class BotCommands:
 
     @styrobot.botcommand('Change the bot\'s avatar image. Url must be an PNG or JPG image.', name='changebotavatar', parserType=commands.ParamParserType.ALL)
     async def _changebotavatar_(self, channel, image_url, **kwargs):
+        """
+        Changes the bot's avatar to the image you provide. Only images with a .jpg or .png extension will work.
+        `!changebotavatar <image_url>`
+        **Example:** `!changebotavatar www.website.com/url_to_image.png`
+        """
+
         extension = ''
 
         if '.jpg' in image_url.lower():
@@ -81,10 +87,22 @@ class BotCommands:
 
     @styrobot.botcommand('Change the name of the bot to <name>', name='changebotname', parserType=commands.ParamParserType.ALL)
     async def _changebotname_(self, server, name, **kwargs):
+        """
+        Changes the bot's server nickname to the name you provide. 
+        `!changebotname <name>`
+        **Example:** `!changebotname He-man, Master of the Universe`
+        """
+
         await self.bot.change_nickname(server.me, name)
 
     @styrobot.botcommand('Clean image and music assets', name='cleanassets')
     async def _cleanassets_(self, channel, author, **kwargs):
+        """
+        Cleans the image and music assets cached by the bot.
+        `!cleanassets`
+        **Example:** `!cleanassets`
+        """
+
         self.logger.debug('[cleanassets]: Cleaning assets.')
         if self.bot.isAdmin(author):
             # clean music files
@@ -107,30 +125,75 @@ class BotCommands:
 
     @styrobot.botcommand('Create an F14!', name='f14')
     async def _f14_(self, channel, **kwargs):
+        """
+        Posts an image of an F14.
+        `!f14`
+        **Example:** `!f14`
+        """
+
         await self.bot.send_file(channel, 'images/f14.jpg')
 
     @styrobot.botcommand('Help has never been so unhelpful', name='halp')
     async def _halp_(self, channel, **kwargs):
+        """
+        Scambles the help howto message.
+        `!halp`
+        **Example:** `!halp`
+        """
+
         await self.getHelp(channel, '', True)
 
     @styrobot.botcommand('Help has never been so unhelpful', name='halp')
     async def _halpPage_(self, channel, page_name, **kwargs):
+        """
+        Scambles the help message for the bot or specific plugin.
+        `!halp <page_name>`
+        **Example for bot:** `!halp bot`
+        **Example for plugin:** `!halp music`
+        """
+
         await self.getHelp(channel, page_name, True)
 
     @styrobot.botcommand('Say Hello', name='hello')
     async def _hello_(self, channel, author, **kwargs):
+        """
+        Says hello!
+        `!hello`
+        **Example:** `!hello`
+        """
+        
         await self.bot.send_message(channel, 'Hello <@' + author.id + '>')
 
     @styrobot.botcommand('Provides the basic help page', name='help')
     async def _help_(self, channel, **kwargs):
+        """
+        Displays the basic howto message for the bot. This explains how to use commands.
+        `!help`
+        **Example:** `!help`
+        """
+
         await self.getHelp(channel, '')
 
     @styrobot.botcommand('Provides the help page for a specific part of the bot or its plugins', name='help')
     async def _helpPage_(self, channel, page_name, **kwargs):
+        """
+        Displays the help for the bot or a specific plugin. This shows the different commands available.
+        `!help <page_name>`
+        **Example for bot:** `!help bot`
+        **Example for plugin:** `!help music`
+        """
+
         await self.getHelp(channel, page_name)
 
     @styrobot.botcommand('Join voice channel with given name', name='join')
     async def _join_(self, server, channel, author, name, **kwargs):
+        """
+        Tells the bot to join the voice channel with the given name. This is not case sensitive unless there are multiple channels with the same name. If there are multiple channels with the same name you will need to provide the exact, case sensitive, name.
+        `!join <name>`
+        **Example when not case sensitive:** `!join general`
+        **Example when case sensitive:** `!join GeNerAl`
+        """
+
         temp = []
         chan = None
         for channel in server.channels:
@@ -160,6 +223,12 @@ class BotCommands:
 
     @styrobot.botcommand('Join voice channel you are currently in', name='join')
     async def _joinme_(self, server, channel, author, **kwargs):
+        """
+        Tells the bot to join the voice channel you are currently in.
+        `!join`
+        **Example:** `!join`
+        """
+
         chan = author.voice.voice_channel
 
         if chan is None:
@@ -171,6 +240,12 @@ class BotCommands:
 
     @styrobot.botcommand('Leave the current voice channel', name='leave')
     async def _leave_(self, channel, author, **kwargs):
+        """
+        Tells the bot to leave the voice channel it is currently in. Only the person who brought it into the voice channel (or an admin) can do this.
+        `!leave`
+        **Example:** `!leave`
+        """
+
         if author == self.bot.voiceStarter or self.bot.isAdmin(author):
             for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
                 await plugin.plugin_object.onLeaveVoiceChannel()
@@ -187,6 +262,12 @@ class BotCommands:
 
     @styrobot.botcommand('Reloads the plugins dynamically at runtime', name='reload')
     async def _reload_(self, channel, author, **kwargs):
+        """
+        Reloads the plugins the bot is using at runtime. This can only be done by an admin.
+        `!reload`
+        **Example:** `!reload`
+        """
+
         if self.bot.isAdmin(author):
             await self.bot.reloadPlugins()
             return
@@ -196,6 +277,12 @@ class BotCommands:
 
     @styrobot.botcommand('Shutdown the bot (requires server admin permissions)', name='shutdown')
     async def _shutdown_(self, channel, author, **kwargs):
+        """
+        Shuts down the bot. This can only be done by an admin.
+        `!shutdown`
+        **Example:** `!shutdown`
+        """
+
         if self.bot.isAdmin(author):
             # Call shutdown on our plugins
             await self.bot.shutdownPlugins()
@@ -214,7 +301,7 @@ class BotCommands:
         """
         await self.getUsage(channel, None, None)
 
-    @styrobot.botcommand('', name='usage')
+    @styrobot.botcommand('Shows the usage for a bot command', name='usage')
     async def _usageBot_(self, channel, botcommand, **kwargs):
         """
         Provides documentation on the bot command you specify:
@@ -223,7 +310,7 @@ class BotCommands:
         """
         await self.getUsage(channel, None, botcommand)
 
-    @styrobot.botcommand('', name='usage')
+    @styrobot.botcommand('Shows the usage for a plugin command', name='usage')
     async def _usagePlugin_(self, channel, tag, command, **kwargs):
         """
         Provides documentation on the plugin command you specify:
