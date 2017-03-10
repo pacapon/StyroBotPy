@@ -466,10 +466,14 @@ class BotCommands:
                 if command in self.parsedCommands:
                     usageStr = '__**Usage for {}:**__\n'.format(command)
                     commandStr = ''
+
+                    temp = [i for i in range(len(self.parsedCommands[command][commands.CommandRegistry.USAGE]))]
+                    sorted(temp, key=lambda i, com=self.parsedCommands[command][commands.CommandRegistry.NUM_PARAMS]: com[i])
                     
-                    for i, commandUsage in enumerate(self.parsedCommands[command][commands.CommandRegistry.USAGE]):
+                    for i in range(len(temp)):
+                        commandUsage = self.parsedCommands[command][commands.CommandRegistry.USAGE][temp[i]]
                         if commandUsage is not None:
-                            if i is not 0: commandStr += '\n' 
+                            if i is not 0: commandStr += '\n'
                             commandStr += commandUsage + '\n'
 
                     if commandStr.replace('\n', '') == '':

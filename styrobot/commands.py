@@ -40,6 +40,7 @@ class CommandHelper:
 
         for key, value in commandList.items():
             numOverloads = len(value[CommandRegistry.FUNCTION_NAME])
+
             for i in range(numOverloads):
                 if tag is not None:
                     str = '`!{} {} '.format(tag, key)
@@ -61,12 +62,10 @@ class CommandHelper:
 
         commandPrefix = '!' + (tag + ' ') if tag is not None else ''
 
-        # We need to do a reverse sort on all the overloaded functions because they aren't
-        # in the order we want them to be
         for key, value in overloads.items():
             index = next(i for i, item in enumerate(commands) if commandPrefix + key in item)
 
-            commands[index:index+value] = sorted(commands[index:index+value], reverse=True)
+            commands[index:index+value] = sorted(commands[index:index+value], key=lambda com: com.count('<'))
 
         return commands
 
