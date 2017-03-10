@@ -9,6 +9,8 @@ import re
 import random
 
 class BotCommands:
+    TAG = 'bot'
+
     async def _init(self, bot):
         self.defaultParserType = commands.ParamParserType.SPACES
         self.defaultParser = commands.CommandRegistry.PARAM_PARSER_SPACES
@@ -122,6 +124,132 @@ class BotCommands:
 
         self.logger.debug('[cleanassets]: %s, You do not have permission to do that.', author)
         await self.bot.send_message(channel, '<@' + author.id + '>, You do not have permission to do that.')
+
+    @styrobot.botcommand('Disables a plugin temporarily', name='disableplugin')
+    async def _disableplugin_temporary(self, channel, server, tag, **kwargs):
+        """
+        Disables the plugin with the tag or alias you provide temporarily. This is equivalent to calling disableplugin with false for ispermanent. This can only be done by an admin.
+        `!disableplugin <tag>`
+        **Example with tag:** `!disableplugin chatmod`
+        **Example with alias:** `!disableplugin cm`
+        """
+
+        await self._disableplugin_(channel, server, tag, 'false', **kwargs)
+
+    @styrobot.botcommand('Disables a plugin temporarily or permanently', name='disableplugin')
+    async def _disableplugin_(self, channel, server, tag, ispermanent, **kwargs):
+        """
+        Disables the plugin with the tag or alias you provide. If you specified true to ispermanent, it will be permanent and persist between bot sessions. If you specified false to ispermanent, it will only last until the bot is restarted or you re-enable the plugin. True/False are not case sensitive for ispermanent. This can only be done by an admin.
+        `!disableplugin <tag> <ispermanent>`
+        **Example with tag:** `!disableplugin chatmod false`
+        **Example with tag:** `!disableplugin chatmod FALSE`
+        **Example with alias:** `!disableplugin cm true`
+        **Example with alias:** `!disableplugin cm TRUE`
+        """
+        self.logger.debug('Attempting to disable plugin {}  permanent: {}'.format(tag, ispermanent))
+
+        for _plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
+            plugin = _plugin.plugin_object
+            if tag == plugin.tag or tag == plugin.shortTag:
+                plugin.isDisabled = True
+
+                if ispermanent.lower() == 'true':
+                    if plugin.isDisabledPermanently is True:
+                        self.logger.debug('This plugin has already been disabled permanently.')
+                        await self.bot.send_message(channel, 'This plugin has already been disabled permanently!')
+                        continue
+
+                    plugin.isDisabledPermanently = True 
+
+                    disabledplugins = []
+                    settings = await self.bot.getSettingsForTag(server, BotCommands.TAG)
+                    if settings is not None and 'disabledplugins' in settings:
+                        disabledplugins = settings['disabledplugins'].split(',')
+
+                    if len(disabledplugins) == 1 and disabledplugins[0] is '':
+                        disabledplugins = []
+
+                    # Add the plugin to the list
+                    disabledplugins.append(plugin.tag)
+
+                    # Recreate the array and store it back in the settings
+                    newsetting = ''
+                    for i, _disabledplugin in enumerate(disabledplugins):
+                        newsetting += _disabledplugin + ','
+                    newsetting = newsetting[:-1]
+
+                    await self.bot.modifySetting(server, BotCommands.TAG, 'disabledplugins', newsetting)
+                    self.logger.debug('Plugin `{}` has been permanently disabled!'.format(plugin.tag))
+                    self.logger.debug('Settings have been updated!')
+                    await self.bot.send_message(channel, 'Plugin `{}` has been permanently disabled!'.format(plugin.tag))
+                else:
+                    self.logger.debug('Plugin `{}` has been temporarily disabled!'.format(plugin.tag))
+                    await self.bot.send_message(channel, 'Plugin `{}` has been temporarily disabled!'.format(plugin.tag))
+
+
+    @styrobot.botcommand('Enables a plugin temporarily', name='enableplugin')
+    async def _enableplugin_temporary(self, server, channel, tag, **kwargs):
+        """
+        Enables the plugin with the tag or alias you provide temporarily. This is equivalent to calling enableplugin with false for ispermanent. This can only be done by an admin.
+        `!enableplugin <tag>`
+        **Example with tag:** `!enableplugin chatmod`
+        **Example with alias:** `!enableplugin cm`
+        """
+
+        await self._enableplugin_(server, channel, tag, 'false', **kwargs)
+
+    @styrobot.botcommand('Enables a plugin temporarily or permanently', name='enableplugin')
+    async def _enableplugin_(self, server, channel, tag, ispermanent, **kwargs):
+        """
+        Enables the plugin with the tag or alias you provide. If you specified true to ispermanent, it will be permanent and persist between bot sessions. If you specified false to ispermanent, it will only last until the bot is restarted or you disable the plugin again. True/False are not case sensitive for ispermanent. This can only be done by an admin.
+        `!enableplugin <tag> <ispermanent>`
+        **Example with tag:** `!enableplugin chatmod false`
+        **Example with tag:** `!enableplugin chatmod FALSE`
+        **Example with alias:** `!enableplugin cm true`
+        **Example with alias:** `!enableplugin cm TRUE`
+        """
+
+        self.logger.debug('Attempting to enable plugin {}  permanent: {}'.format(tag, ispermanent))
+
+        for _plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
+            plugin = _plugin.plugin_object
+            if tag == plugin.tag or tag == plugin.shortTag:
+                plugin.isDisabled = False 
+
+                if ispermanent.lower() == 'true':
+                    if plugin.isDisabledPermanently is False:
+                        self.logger.debug('This plugin has already been enabled permanently.')
+                        await self.bot.send_message(channel, 'This plugin has already been enabled permanently!')
+                        continue
+
+                    plugin.isDisabledPermanently = False 
+
+                    settings = await self.bot.getSettingsForTag(server, BotCommands.TAG)
+                    if settings is not None and 'disabledplugins' in settings:
+                        disabledplugins = settings['disabledplugins'].split(',')
+
+                        if len(disabledplugins) == 1 and disabledplugins[0] is '':
+                            disabledplugins = []
+
+                        # Delete the tag from the list
+                        for i, _disabledplugin in enumerate(disabledplugins):
+                            if _disabledplugin == plugin.tag:
+                                del disabledplugins[i]
+                                break
+
+                        # Recreate the array and store it back in the settings
+                        newsetting = ''
+                        for i, _disabledplugin in enumerate(disabledplugins):
+                            newsetting += _disabledplugin + ','
+                        newsetting = newsetting[:-1]
+
+                        await self.bot.modifySetting(server, BotCommands.TAG, 'disabledplugins', newsetting)
+                        self.logger.debug('Plugin `{}` has been permanently enabled!'.format(plugin.tag))
+                        self.logger.debug('Settings have been updated!')
+                        await self.bot.send_message(channel, 'Plugin `{}` has been permanently enabled!'.format(plugin.tag))
+                else:
+                    self.logger.debug('Plugin `{}` has been temporarily enabled!'.format(plugin.tag))
+                    await self.bot.send_message(channel, 'Plugin `{}` has been temporarily enabled!'.format(plugin.tag))
 
     @styrobot.botcommand('Create an F14!', name='f14')
     async def _f14_(self, channel, **kwargs):
@@ -419,8 +547,23 @@ class BotCommands:
         helpStr += 'To see which commands the bot has, type `!help bot`\n'
         helpStr += 'To see all commands available, type `!help all`\n\n'
 
-        for plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
-            helpStr += '**[' + plugin.name + ']** Tag: **' + plugin.plugin_object.tag + '**  Alias: **' + plugin.plugin_object.shortTag + '**\n'
+        disabled = []
+        formatStr = lambda name, tag, alias: '**[{}]** Tag: `{}` Alias: `{}`\n'.format(name, tag, alias)
+
+        for _plugin in self.bot.pluginManager.getPluginsOfCategory("Plugins"):
+            plugin = _plugin.plugin_object
+
+            if plugin.isDisabled == False:
+                helpStr += formatStr(_plugin.name, plugin.tag, plugin.shortTag)
+            else:
+                disabled.append((_plugin.name, plugin))
+
+        if len(disabled) > 0:
+            helpStr += '\n__**Disabled Plugins:**__\n'
+            for _, _plugin in enumerate(disabled):
+                name = _plugin[0]
+                plugin = _plugin[1]
+                helpStr += formatStr(name, plugin.tag, plugin.shortTag)
 
         return helpStr
 

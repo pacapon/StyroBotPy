@@ -57,6 +57,14 @@ class Bot(discord.Client):
         # Uncomment to see full command registry logged  WARNING: There is a lot of text
         #logger.debug('Registry: %s', str(plugincommand.registry))
 
+        # TODO: Make this a little more multi-server friendly
+        settings = await self.getSettingsForTag(list(self.servers)[0], botcommands.BotCommands.TAG)
+        if settings is not None and 'disabledplugins' in settings:
+            disabledplugins = settings['disabledplugins'].split(',')
+
+        if len(disabledplugins) == 1 and disabledplugins[0] is '':
+            disabledplugins = []
+
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
             # Give the plugin it's dictionary of commands (so it doesn't need to lookup later)
             pluginCls = plugin.plugin_object.__class__.__name__
@@ -67,6 +75,11 @@ class Bot(discord.Client):
 
             await plugin.plugin_object._init(plugin.name, self)
             logger.debug('%s Initialized!', plugin.name)
+
+            for _, _disabledplugin in enumerate(disabledplugins):
+                if plugin.plugin_object.tag == _disabledplugin or plugin.plugin_object.shortTag == _disabledplugin:
+                    plugin.plugin_object.isDisabled = True
+                    plugin.plugin_object.isDisabledPermanently = True
 
         self.commandCollisions = {}
         self.getCommandCollisions()
@@ -198,7 +211,7 @@ class Bot(discord.Client):
     async def _readMessage(self, message):
         # Go through each of the plugins and let them read the message
         for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
-            if plugin.plugin_object.isReadingMessages():
+            if not plugin.plugin_object.isDisabled and plugin.plugin_object.isReadingMessages():
                 await plugin.plugin_object.readMessage(message)
 
     async def _executePluginCommand(self, text, _server, _channel, _author, **kwargs):
@@ -214,6 +227,11 @@ class Bot(discord.Client):
             for plugin in self.pluginManager.getPluginsOfCategory("Plugins"):
                 # Check if a plugin can handle the command and execute it if they can
                 if tag != None and command != None and plugin.plugin_object.isCommand(tag, command):
+                    if plugin.plugin_object.isDisabled:
+                        found = True
+                        await self.send_message(_channel, 'This plugin is currently disabled. To use commands, please enable it first.')
+                        continue
+
                     index, temp = plugin.plugin_object.parseCommandArgs(command, args)
                     tag = plugin.plugin_object.tag # Update the tag for better feedback
 
