@@ -15,6 +15,8 @@ class Plugin:
         self.defaultParserType = ParamParserType.SPACES
         self.defaultParser = CommandRegistry.PARAM_PARSER_SPACES
         self.logger = logging.getLogger('styrobot.' + name)
+        self.isDisabled = False
+        self.isDisabledPermanently = False
 
         await self.initialize(bot)
         
