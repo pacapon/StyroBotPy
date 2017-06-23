@@ -58,7 +58,9 @@ class Bot(discord.Client):
         #logger.debug('Registry: %s', str(plugincommand.registry))
 
         # TODO: Make this a little more multi-server friendly
+        disabledplugins = []
         settings = await self.getSettingsForTag(list(self.servers)[0], botcommands.BotCommands.TAG)
+
         if settings is not None and 'disabledplugins' in settings:
             disabledplugins = settings['disabledplugins'].split(',')
 
