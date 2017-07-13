@@ -13,7 +13,9 @@ class HighRoller(Plugin):
     @styrobot.plugincommand('Rolls a dice of size <number>', name='roll')
     async def _roll_(self, server, channel, author, number):
         """
-           !highroller roll [number]
+        Rolls a dice of the size you provide. The number must be greater than 0.
+        `!highroller roll <number>`
+        **Example:** `!highroller roll 20`
         """
         if self.isNumber(number) and int(number) > 0:
             result = self.rollDice(int(number))
@@ -27,8 +29,10 @@ class HighRoller(Plugin):
     @styrobot.plugincommand('Call the next coinflip (Heads or Tails)', name='callflip')
     async def _callflip_(self, server, channel, author, name):
         """
-           !highroller callflip Heads
-           !highroller callflip Tails
+        Call the next coinflip before it happens. Once two different people call it, the flip will automatically happen and the winner/s will be announced. You can call Heads or Tails. This command is not case sensitive.
+        `!highroller callflip <name>`
+        **Example call for heads:** `!highroller callflip Heads`
+        **Example call for tails:** `!highroller callflip Tails`
         """
         firstWord = name.lower()
 
@@ -74,7 +78,9 @@ class HighRoller(Plugin):
     @styrobot.plugincommand('Flips a coin', name='flipcoin')
     async def _flipcoin_(self, server, channel, author):
         """
-           !highroller flipcoin
+        Flips a coin.
+        `!highroller flipcoin`
+        **Example:** `!highroller flipcoin`
         """
         result = self.flipCoin()
         self.logger.debug('[flipcoin]: %s!', result)

@@ -32,7 +32,9 @@ class CleverBotChat(Plugin):
     @styrobot.plugincommand('Sends a message to CleverBot', name='chat', parserType=commands.ParamParserType.ALL)
     async def _chat_(self, server, channel, author, text):
         """
-           !cleverbot chat <text>
+        Sends a message to Cleverbot. Anything typed after '!cleverbot chat' will be sent.
+        `!cleverbot chat <text>`
+        **Example:** `!cleverbot chat yo! whats up hommey?`
         """
         self.logger.debug('[chat] [%s]: %s', author, text)
         response = self.cb.ask(text)

@@ -219,6 +219,16 @@ class Trollolo(Plugin):
         url = 'https://www.youtube.com/watch?v=R5kPUFxXYLs'
         await self.playTroll(server, channel, url, 'dungeon', **kwargs)
 
+    @styrobot.plugincommand('NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO', name='nooo')
+    async def _nooo_(self, server, channel, author, **kwargs):
+        """
+        Plays Darth Vader saying NOOOOOOOOOOOOOO
+        `!troll nooo`
+        **Example:** `!troll nooo`
+        """
+        url = 'https://www.youtube.com/watch?v=WWaLxFIVX1s'
+        await self.playTroll(server, channel, url, 'nooo', **kwargs)
+
     def dl_song(self, url, name):
         video = pafy.new(url)
         audio = video.audiostreams

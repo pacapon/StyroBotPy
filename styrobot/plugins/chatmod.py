@@ -46,7 +46,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Shows the list of banned words', name='showbanned')
     async def _showbanned_(self, server, channel, author):
         """
-           !chatmod showbanned
+        Shows the list of banned words.
+        `!chatmod showbanned`
+        **Example:** `!chatmod showbanned`
         """
         if len(self.bannedWords) > 0:
             words = ''
@@ -62,7 +64,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Show the current settings for the chat mod plugin', name='settings')
     async def _settings_(self, server, channel, author):
         """
-           !chatmod settings
+        Show the current settings for the chat mod plugin.
+        `!chatmod settings`
+        **Example:** `!chatmod settings`
         """
         self.logger.debug('[cmsettings]: Max Warnings: %s  Ban Action: %s', str(self.maxWarnings), self.banAction)
         await self.bot.send_message(channel, 'Max Warnings: ' + str(self.maxWarnings) + '\nBan Action: ' + self.banAction)
@@ -70,7 +74,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Set the max number of warnings to <number>', name='setmaxwarn')
     async def _setmaxwarn_(self, server, channel, author, number):
         """
-           !chatmod setmaxwarn <number>
+        Set the max number of warnings a person will get before action is taken.
+        `!chatmod setmaxwarn <number>`
+        **Example:** `!chatmod setmaxwarn 4`
         """
         if int(number) < 0:
             self.logger.debug('[cmmaxwarn]: You can\'t have negative max warnings.')
@@ -85,8 +91,10 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Change the action to take when a player has hit their max warnings (kick, ban)', name='setbanact')
     async def _setbanact_(self, server, channel, author, action):
         """
-           !chatmod setbanact kick
-           !chatmod setbanact ban
+        Change the action to take when a play has run out of warnings. You can either kick or ban them from the server.
+        `!chatmod setbanact <action>`
+        **Example kick:** `!chatmod setbanact kick`
+        **Example ban:** `!chatmod setbanact ban`
         """
         if action == 'kick' or action == 'ban':
             self.banAction = action
@@ -101,7 +109,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Check your current warning status', name='status')
     async def _status_(self, server, channel, author):
         """
-           !chatmod status
+        Check how many warnings the chat mod has given you about bad language.
+        `!chatmod status`
+        **Example:** `!chatmod status`
         """
         if author.name in self.userWarnings:
             self.logger.debug('[cmstatus]: %s, you have %s warnings.', author, str(self.userWarnings[author.name]))
@@ -114,7 +124,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Adds <word> to the list of banned words', name='ban')
     async def _ban_(self, server, channel, author, word):
         """
-           !chatmod ban <word>
+        Adds the word you provide to the list of banned words. This command is not case sensitive.
+        `!chatmod ban <word>`
+        **Example:** `!chatmod ban trump`
         """
         firstWord = self.scrubMessage(word)
 
@@ -133,7 +145,9 @@ class ChatMod(Plugin):
     @styrobot.plugincommand('Removes <word> from the list of banned words', name='unban')
     async def _unban_(self, server, channel, author, word):
         """
-           !chatmod unban <word>
+        Removes the word you provide from the list of banned words. This command is not case sensitive.
+        `!chatmod unban <word>`
+        **Example:** `!chatmod unban RuSsIa`
         """
         firstWord = self.scrubMessage(word)
 
