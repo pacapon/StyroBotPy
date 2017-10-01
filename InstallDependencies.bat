@@ -2,7 +2,7 @@
 
 echo "Installing Dependencies for StyroBotPy"
 echo "Installing Discord.py"
-pip install git+https://github.com/Rapptz/discord.py@async
+pip install -U discord.py[voice]
 echo "Complete!"
 echo "Installing Cleverbot"
 pip install cleverbot
