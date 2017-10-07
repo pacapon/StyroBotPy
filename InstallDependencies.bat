@@ -10,6 +10,9 @@ echo "Complete!"
 echo "Installing Pafy"
 pip install pafy
 echo "Complete!"
+echo "Installing Youtube-dl"
+pip install youtube-dl
+echo "Complete!"
 echo "Installing Yapsy"
 pip install yapsy
 echo "Complete!"

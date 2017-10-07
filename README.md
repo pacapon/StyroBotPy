@@ -6,6 +6,7 @@ An extendable, plugin driven, discord bot framework based on Rapptz discord.py
 - discord.py
 - cleverbot.py
 - pafy
+- youtube-dl
 - yapsy
 - ffmpeg (if you want to use audio stuff)
 

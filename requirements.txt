@@ -1,4 +1,5 @@
-git+https://github.com/Rapptz/discord.py@async
+discord.py[voice]
 cleverbot
 pafy
 yapsy
+youtube-dl
